@@ -32,7 +32,13 @@ namespace PR2_Level_Generator
 		}
 		public double GetParamValue(string name)
 		{
-			return parameters[name];
+			if (parameters.ContainsKey(name))
+				return parameters[name];
+			else
+			{
+				Console.WriteLine("Parameter '" + name + "' not found.");
+				return double.NaN;
+			}
 		}
 		public void SetParamValue(string name, double value)
 		{

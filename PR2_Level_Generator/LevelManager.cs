@@ -91,7 +91,16 @@ namespace PR2_Level_Generator
                 }
                 return true;
             }
+		}
 
+		public string GetParamOrSetting(string name)
+		{
+			name = name.ToLower();
+			int paramIndex = Array.IndexOf(generator.GetParamNames(), name);
+            if (paramIndex == -1) // Level setting
+                return Map.GetMapSetting(name);
+            else
+				return generator.GetParamValue(name).ToString();
 		}
 
 
