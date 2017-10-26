@@ -13,9 +13,21 @@ namespace PR2_Level_Generator
 		// Video = 640, 480
 		public MapLE()
 		{
-			title = "title";
-			cowboyChance = 5;
-			gravity = 1.0;
+			settings = new SortedDictionary<string, string>();
+			settings.Add("song", ""); // random song
+			settings.Add("min_level", "0");
+			settings.Add("gravity", "1");
+			settings.Add("items", ""); // always call SetItems, never change this directly
+			SetItems("1`2`3`4`5`6`7`8`9");
+			settings.Add("cowboyChance", "5");
+			settings.Add("hasPass", "0");
+			settings.Add("gameMode", "race");
+			settings.Add("title", "title");
+			settings.Add("credits", "PR2_Level_Generator");
+			settings.Add("note", "");
+			settings.Add("live", "0");
+			settings.Add("max_time", "120");
+			settings.Add("password", "");
 		}
 
 		// Block array(s)
@@ -35,28 +47,151 @@ namespace PR2_Level_Generator
 		public int bgID = -1;
 
 		// Options
-		public int song;
-		public sbyte min_level;
-		public double gravity = 1.0;
+		#region "Map Settings"
+		SortedDictionary<string, string> settings;
+		/// <summary>
+		/// PR2 uses a blank to mean random. Values that can't be parsed as integers mean no music, 0.
+		/// Values higher than 15 (Prismatic) or less than 1 result in no music.
+		/// I will return -1 for random.
+		/// </summary>
+		public int Song
+		{
+			get
+			{
+				if (string.IsNullOrEmpty(settings["song"]))
+					return -1;
+				else if (!int.TryParse(settings["song"], out int v))
+					return 0;
+				else
+					return Math.Max(v, 0);
+			}
+		}
+		public sbyte MinimumRank
+		{
+			get
+			{
+				double.TryParse(settings["min_level"], out double v);
+				v = Math.Min(sbyte.MaxValue, Math.Max(sbyte.MinValue, v));
+				return double.IsNaN(v) ? (sbyte)0 : (sbyte)v;
+			}
+		}
+		public double Gravity
+		{
+			get
+			{
+				double.TryParse(settings["gravity"], out double v);
+				v = Math.Min(99, Math.Max(-99, v));
+				return double.IsNaN(v) ? 0 : v;
+			}
+		}
 		public int[] avItems = new int[0];
-		public int max_time;
-		public int cowboyChance;
-		public bool hasPass = false;
-		public string password;
-		private bool useOldPass = false;
-		public string gameMode = "race";
+		/// <summary>
+		/// PR2 server converts unicode characters into a mess of UTF8 chars
+		/// max_time is parsed to a double, and then limited to be between 0 and 9999.
+		/// If it is 0, time is unlimited.
+		/// Then, the time limit is truncated to an int.
+		/// NaN and values over 0 but below 1 result in 0 second time limit, not infinite time.
+		/// I will represent unlimited time as a -1. 0 means 0 second limit.
+		/// </summary>
+		public int TimeLimit {
+			get
+			{
+				if (!double.TryParse(settings["max_time"], out double v))
+					return 0;
+
+				v = Math.Min(9999, Math.Max(v, 0));
+				int intValue = (int)v;
+
+				if (intValue == 0)
+					return -1;
+				else
+					return intValue;
+			}
+		}
+		public int CowboyChance
+		{
+			get
+			{
+				double.TryParse(settings["cowboyChance"], out double v);
+				v = Math.Min(100, Math.Max(0, v));
+				return double.IsNaN(v) ? 0 : (int)v;
+
+			}
+		}
+		public bool HasPassword { get => settings["hasPass"].StartsWith('1'); }
+		public bool useOldPass = false;
+		public char GameMode { get => GameModes.PR2NameToID(settings["gameMode"]); }
 		private int finish_count = 0;
 
 		// Other options
-		public string title;
-		public string credits;
-		public string note;
 		/// <summary>
-		/// 0 for un-published, 1 for published
+		/// PR2 client: 0 for un-published, 1 for published
+		/// PR2 server: Level is published if first character of live is a 1.
 		/// </summary>
 		/// <remarks></remarks>
-		public int live = 0;
+		public bool Published { get => settings["live"].StartsWith('1'); }
 		public string userName = "";
+
+        public bool SetMapSetting(string name, string value)
+        {
+			if (settings.ContainsKey(name))
+			{
+				if (name == "items")
+					SetItems(value);
+				else if (name == "mode")
+					SetMode(value);
+				else
+					settings[name] = value;
+
+				return true;
+			}
+
+			Console.Write("No setting \'" + name + "\' exits.");
+			return false;
+        }
+        public string GetMapSetting(string name)
+        {
+			if (settings.ContainsKey(name))
+				return settings[name];
+			else
+				return "Setting \'" + name + "\' does not exist.";
+        }
+
+  		private void SetItems(string ItemStr)
+		{
+			string[] avItemStr = ItemStr.Split('`');
+			List<int> itemList = new List<int>();
+
+			for (int i = 0; i < avItemStr.Length; i++)
+			{
+				int id = Item.PR2NameToID(avItemStr[i]);
+				if (id != Item.NULL)
+					itemList.Add(id);
+			}
+
+			avItems = itemList.ToArray();
+			settings["items"] = ItemStr;
+		}
+		private void SetMode(string value)
+		{
+			switch (value)
+			{
+				case "r":
+					value = "race";
+					break;
+				case "d":
+					value = "deathmatch";
+					break;
+				case "o":
+					value = "objective";
+					break;
+				case "e":
+					value = "egg";
+					break;
+			}
+			settings["gameMode"] = value;
+		}
+		#endregion
 
 		// Art
 		public string[] artCodes = new string[10];
@@ -398,7 +533,7 @@ namespace PR2_Level_Generator
 		public string GetData(bool keepArt = true)
 		{
 			string data = GetDataParam(keepArt);
-			string stringToHash = title + userName.ToLower() + data + "[salt]";
+			string stringToHash = settings["title"] + userName.ToLower() + data + "[salt]";
 			byte[] bytesToHash = Encoding.UTF8.GetBytes(stringToHash);
 			byte[] bytesHashed = (new MD5CryptoServiceProvider()).ComputeHash(bytesToHash);
 			string upload_hash = BitConverter.ToString(bytesHashed).Replace("-", "").ToLower();
@@ -406,32 +541,30 @@ namespace PR2_Level_Generator
 			string Items = GetItemsStr();
 
 			// Put all the data bits into one string
-			string LData = "credits=" + credits + "&live=" + live + "&max_time=" + max_time;
-			LData += "&items=" + Items + "&title=" + title + "&gravity=" + gravity.ToString("R") + "&hash=";
-			LData += upload_hash + "&data=" + data + "&note=" + note + "&min_level=" + min_level + "&song=";
-			if (song > 0)
-				LData += song;
+			StringBuilder LData = new StringBuilder();
+			foreach (KeyValuePair<string, string> kvp in settings)
+			{
+				LData.Append(kvp.Key + "=" + kvp.Value + "&");
+			}
+			LData.Append("hash=" + upload_hash + "&data=" + data);
 
 			// Password
-			string passHash = "";
-			if (passImpossible)
-				passHash = "383";
-			else if (!useOldPass)
+			if (HasPassword)
 			{
-				stringToHash = password + "[salt]";
-				bytesToHash = Encoding.UTF8.GetBytes(stringToHash);
-				bytesHashed = (new MD5CryptoServiceProvider()).ComputeHash(bytesToHash);
-				passHash = BitConverter.ToString(bytesHashed).Replace("-", "").ToLower();
+				string passHash = "";
+				if (passImpossible)
+					passHash = "383";
+				else if (!useOldPass)
+				{
+					stringToHash = settings["password"] + "[salt]";
+					bytesToHash = Encoding.UTF8.GetBytes(stringToHash);
+					bytesHashed = (new MD5CryptoServiceProvider()).ComputeHash(bytesToHash);
+					passHash = BitConverter.ToString(bytesHashed).Replace("-", "").ToLower();
+				}
+				LData.Append("&passHash=" + passHash);
 			}
 
-			if (hasPass)
-				LData += "&hasPass=1&passHash=" + passHash;
-			else
-				LData += "&hasPass=0";
-			LData += "&gameMode=" + gameMode
-				+ "&cowboyChance=" + cowboyChance;
-
-			return LData;
+			return LData.ToString();
 		}
 		// The 'data' parameter; used to calculate hash
 		public string GetDataParam(bool keepArt = true)
@@ -505,65 +638,23 @@ namespace PR2_Level_Generator
 			string[] Parts = LvlData.Split('&');
 
 			string levelData = "";
-			string SongStr = "";
-			string ItemStr = "";
 			for (int i = 0; i < Parts.Length; i++)
 			{
 				int e = Parts[i].IndexOf('=');
 				string LD = Parts[i].Substring(e + 1);
 				string pName = Parts[i].Substring(0, e);
-				switch (pName)
+
+				if (!SetMapSetting(pName, LD))
 				{
-					case "credits":
-						credits = LD;
-						break;
-					case "title":
-						title = LD;
-						break;
-					case "data":
+					if (pName == "data")
 						levelData = LD;
-						break;
-					case "note":
-						note = LD;
-						break;
-					case "min_level":
-						min_level = Convert.ToSByte(LD);
-						break;
-					case "gravity":
-						gravity = double.Parse(LD);
-						break;
-					case "max_time":
-						if (LD != "NaN")
-							max_time = Convert.ToInt32(LD);
-						break;
-					case "song":
-						SongStr = LD;
-						break;
-					case "items":
-						ItemStr = LD;
-						break;
-					case "gameMode":
-						gameMode = LD;
-						break;
-					case "cowboyChance":
-						cowboyChance = Convert.ToInt32(LD);
-						break;
-					case "has_pas":
-						hasPass = Convert.ToBoolean(LD);
-						if (hasPass)
-						{
-							password = "";
-							useOldPass = true;
-						}
-						break;
+					else if (pName == "has_pass") // in uploads it is hasPass, in downloads it is has_pass
+						settings["hasPass"] = LD;
 				}
 			}
-
-			// Music isn't always user-set
-			if (SongStr != "")
-				song = Convert.ToInt32(SongStr);
-			else
-				song = 0; // ??
+			useOldPass = true;
+			passImpossible = false;
+			settings["password"] = "";
 
 			string[] Codes = levelData.Split('`');
 			// Set arts 1-3
@@ -589,10 +680,6 @@ namespace PR2_Level_Generator
 
 			// get blocks from data
 			LoadBlocks(Codes[2]);
-
-			// Set other stuff
-			// Items
-			SetItems(ItemStr);
 		}
 		private void LoadBlocks(string bData)
 		{
@@ -636,17 +723,9 @@ namespace PR2_Level_Generator
 				AddBlock(LpX, LpY, LpT);
 			}
 		}
-		public void SetItems(string ItemStr)
-		{
-			string[] avItemStr = ItemStr.Split('`');
-			Array.Resize(ref avItems, avItemStr.Length);
-
-			for (int i = 0; i < avItemStr.Length; i++)
-				avItems[i] = Item.NameToID(avItemStr[i]);
-		}
 	}
 
-	static class BlockID
+	public static class BlockID
 	{
 		public const int BB0 = 0;
 		public const int BB1 = 1;
@@ -764,9 +843,9 @@ namespace PR2_Level_Generator
 		}
 	}
 
-	class Item
+	public static class Item
 	{
-		public const int NONE = 0;
+		public const int NULL = 0;
 		public const int LASERGUN = 1;
 		public const int MINE = 2;
 		public const int LIGHTNING = 3;
@@ -775,62 +854,47 @@ namespace PR2_Level_Generator
 		public const int JETPACK = 6;
 		public const int SPEEDY = 7;
 		public const int SWORD = 8;
-		public const int FREEZERAY = 9;
+		public const int ICEWAVE = 9;
 
-		public static int NameToID(string Name)
+		private static SortedDictionary<string, int> itemIDs;
+		public static int PR2NameToID(string name)
 		{
-			int p;
-			if (int.TryParse(Name, out p))
-				return p;
-			if (Name == "")
-				return 0;
-			switch (Name.Substring(0, 2).ToLower())
+			if (itemIDs == null)
 			{
-				case "no":
-					return 0;
-				case "la":
-					return 1;
-				case "mi":
-					return 2;
-				case "li":
-					return 3;
-				case "te":
-					return 4;
-				case "su":
-					return 5;
-				case "je":
-					return 6;
-				case "sp":
-					return 7;
-				case "sw":
-					return 8;
-				case "fr":
-					return 9;
+				itemIDs.Add("Laser Gun", LASERGUN);
+				itemIDs.Add("Mine", MINE);
+				itemIDs.Add("Lightning", LIGHTNING);
+				itemIDs.Add("Teleport", TELEPORT);
+				itemIDs.Add("Super Jump", SUPERJUMP);
+				itemIDs.Add("Jet Pack", JETPACK);
+				itemIDs.Add("Speed", SPEEDY);
+				itemIDs.Add("Sword", SWORD);
+				itemIDs.Add("Ice Wave", ICEWAVE);
 			}
-			return -1;
+
+			return itemIDs.ContainsKey(name) ? itemIDs[name] : NULL;
 		}
-		public static int GetItemID(string Str)
+	}
+
+	public static class GameModes
+	{
+		public const char RACE = 'r';
+		public const char DEATHMATCH = 'd';
+		public const char EGG = 'e';
+		public const char OBJECTIVE = 'o';
+
+		private static SortedDictionary<string, char> modeIDs;
+		public static char PR2NameToID(string name)
 		{
-			int IID = 0;
-			if (Str == null)
-				return 0;
-			if (Str.ToLower().StartsWith("la"))
-				IID = 1;
-			else if (Str.ToLower().StartsWith("mi"))
-				IID = 2;
-			else if (Str.ToLower().StartsWith("li"))
-				IID = 3;
-			else if (Str.ToLower().StartsWith("te"))
-				IID = 4;
-			else if (Str.ToLower().StartsWith("su"))
-				IID = 5;
-			else if (Str.ToLower().StartsWith("je"))
-				IID = 6;
-			else if (Str.ToLower().StartsWith("sp"))
-				IID = 7;
-			else if (Str.ToLower().StartsWith("sw"))
-				IID = 8;
-			return IID;
+			if (modeIDs == null)
+			{
+				modeIDs.Add("race", RACE);
+				modeIDs.Add("deathmatch", DEATHMATCH);
+				modeIDs.Add("objective", OBJECTIVE);
+				modeIDs.Add("egg", EGG);
+			}
+
+			return modeIDs.ContainsKey(name) ? modeIDs[name] : RACE;
 		}
 	}
 }

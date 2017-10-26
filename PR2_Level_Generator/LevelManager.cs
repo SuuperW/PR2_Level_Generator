@@ -64,7 +64,7 @@ namespace PR2_Level_Generator
             Type t = Type.GetType(str[0]);
             ILevelGenerator generator = Activator.CreateInstance(t) as ILevelGenerator;
 
-			for (int i = 1; i < generator.GetParamNames().Length + mapSettingNames.Length; i++)
+			for (int i = 1; i < str.Length; i++)
 			{
 				string[] nameValue = str[i].Split(':');
 				SetParamOrSetting(nameValue[0], nameValue[1]);
@@ -78,7 +78,7 @@ namespace PR2_Level_Generator
 			name = name.ToLower();
 			int paramIndex = Array.IndexOf(generator.GetParamNames(), name);
             if (paramIndex == -1) // Level setting
-                return SetMapSetting(name, value);
+                return Map.SetMapSetting(name, value);
             else
             {
                 double val;
@@ -94,140 +94,6 @@ namespace PR2_Level_Generator
 
 		}
 
-		#region "Map Settings"
-        private string[] mapSettingNames = new string[] { "Credits", "live", "Time", "Items", "Title", "Gravity", "Note", "Min_Rank", "Song", "hasPass", "Pass", "Mode", "Cowboy_Chance" };
-        public bool SetMapSetting(string name, string value)
-        {
-            int intVal;
-            double dVal;
-            bool couldSet = true;
-            switch (name.ToLower())
-            {
-                case "credits":
-                    Map.credits = value;
-                    return true;
-                case "live":
-                    if (int.TryParse(value, out intVal))
-                        Map.live = intVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-                case "time":
-                    if (int.TryParse(value, out intVal))
-                        Map.max_time = intVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-                case "items":
-                    Map.SetItems(value);
-                    return true;
-                case "title":
-                    Map.title = value;
-                    return true;
-                case "gravity":
-                    if (double.TryParse(value, out dVal))
-                        Map.gravity = dVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-                case "note":
-                    Map.note = value;
-                    return true;
-                case "min_rank":
-                    if (int.TryParse(value, out intVal))
-                        Map.min_level = (sbyte)intVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-                case "song":
-                    if (int.TryParse(value, out intVal))
-                        Map.song = intVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-                case "haspass":
-                    if (bool.TryParse(value, out Map.hasPass))
-                        return true;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                case "pass":
-                    Map.password = value;
-                    return true;
-                case "mode":
-                    Map.gameMode = value;
-                    return true;
-                case "cowboy_chance":
-                    if (int.TryParse(value, out intVal))
-                        Map.cowboyChance = intVal;
-                    else
-                    {
-                        couldSet = false;
-                        break;
-                    }
-                    return true;
-
-                default:
-                    Console.Write("No setting \'" + name + "\' exits.");
-                    break;
-            }
-
-            if (!couldSet)
-                Console.Write("Value \'" + value + "\' could not be parsed.");
-            return couldSet;
-        }
-        public string GetMapSetting(string name)
-        {
-            switch (name.ToLower())
-            {
-                case "credits":
-                    return Map.credits;
-                case "live":
-                    return Map.live.ToString();
-                case "time":
-                    return Map.max_time.ToString();
-                case "items":
-                    return Map.GetItemsStr();
-                case "title":
-                    return Map.title;
-                case "gravity":
-                    return Map.gravity.ToString("R");
-                case "note":
-                    return Map.note;
-                case "min_rank":
-                    return Map.min_level.ToString();
-                case "song":
-                    return Map.song.ToString();
-                case "haspass":
-                    return Map.hasPass.ToString();
-                case "pass":
-                    return Map.password;
-                case "mode":
-                    return Map.gameMode;
-                case "cowboy_chance":
-                    return Map.cowboyChance.ToString();
-            }
-
-            return "Setting \'" + name + "\' does not exist.";
-        }
-        #endregion
 
 
 		private string PostLoadHTTP(string url, string postData)

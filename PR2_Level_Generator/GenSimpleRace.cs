@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PR2_Level_Generator
 {
-    class GenSimpleRace : ILevelGenerator
+    public class GenSimpleRace : ILevelGenerator
     {
         public GenSimpleRace()
         {
