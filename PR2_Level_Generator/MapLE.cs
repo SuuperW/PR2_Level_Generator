@@ -49,6 +49,15 @@ namespace PR2_Level_Generator
 		// Options
 		#region "Map Settings"
 		SortedDictionary<string, string> settings;
+		public string[] settingNames
+		{
+			get
+			{
+				string[] ret = new string[settings.Keys.Count];
+				settings.Keys.CopyTo(ret, 0);
+				return ret;
+			}
+		}
 		/// <summary>
 		/// PR2 uses a blank to mean random. Values that can't be parsed as integers mean no music, 0.
 		/// Values higher than 15 (Prismatic) or less than 1 result in no music.
