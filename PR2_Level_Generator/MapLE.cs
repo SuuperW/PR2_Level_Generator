@@ -141,7 +141,7 @@ namespace PR2_Level_Generator
 		public bool Published { get => settings["live"].StartsWith('1'); }
 		public string userName = "";
 
-        public bool SetMapSetting(string name, string value)
+        public bool SetSetting(string name, string value)
         {
 			if (settings.ContainsKey(name))
 			{
@@ -158,7 +158,7 @@ namespace PR2_Level_Generator
 			Console.Write("No setting \'" + name + "\' exits.");
 			return false;
         }
-        public string GetMapSetting(string name)
+        public string GetSetting(string name)
         {
 			if (settings.ContainsKey(name))
 				return settings[name];
@@ -547,8 +547,6 @@ namespace PR2_Level_Generator
 			byte[] bytesHashed = (new MD5CryptoServiceProvider()).ComputeHash(bytesToHash);
 			string upload_hash = BitConverter.ToString(bytesHashed).Replace("-", "").ToLower();
 
-			string Items = GetItemsStr();
-
 			// Put all the data bits into one string
 			StringBuilder LData = new StringBuilder();
 			foreach (KeyValuePair<string, string> kvp in settings)
@@ -629,16 +627,6 @@ namespace PR2_Level_Generator
 
 			return ret.ToString();
 		}
-		public string GetItemsStr()
-		{
-			string ret = "";
-			for (int i = 0; i < avItems.Length; i++)
-				ret += avItems[i] + "`";
-			if (ret.Length > 0)
-				ret = ret.Substring(0, ret.Length - 1);
-
-			return ret;
-		}
 		public void LoadLevel(string LvlData)
 		{
 			if (!LvlData.Substring(LvlData.Length - 32).Contains("&") && !LvlData.Substring(LvlData.Length - 32).Contains("`"))
@@ -653,7 +641,7 @@ namespace PR2_Level_Generator
 				string LD = Parts[i].Substring(e + 1);
 				string pName = Parts[i].Substring(0, e);
 
-				if (!SetMapSetting(pName, LD))
+				if (!SetSetting(pName, LD))
 				{
 					if (pName == "data")
 						levelData = LD;
