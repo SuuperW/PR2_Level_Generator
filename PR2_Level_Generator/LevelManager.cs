@@ -75,7 +75,6 @@ namespace PR2_Level_Generator
 
 		public bool SetParamOrSetting(string name, string value)
 		{
-			name = name.ToLower();
 			int paramIndex = Array.IndexOf(generator.GetParamNames(), name);
             if (paramIndex == -1) // Level setting
                 return Map.SetSetting(name, value);
