@@ -858,6 +858,7 @@ namespace PR2_Level_Generator
 		{
 			if (itemIDs == null)
 			{
+				itemIDs = new SortedDictionary<string, int>();
 				itemIDs.Add("Laser Gun", LASERGUN);
 				itemIDs.Add("Mine", MINE);
 				itemIDs.Add("Lightning", LIGHTNING);
@@ -885,6 +886,7 @@ namespace PR2_Level_Generator
 		{
 			if (modeIDs == null)
 			{
+				modeIDs = new SortedDictionary<string, char>();
 				modeIDs.Add("race", RACE);
 				modeIDs.Add("deathmatch", DEATHMATCH);
 				modeIDs.Add("objective", OBJECTIVE);
