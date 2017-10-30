@@ -355,7 +355,7 @@ namespace LevelGenBot
 			GenerationManager generationManager = new GenerationManager();
 			bool valid = false;
 			try
-			{ valid = generationManager.LoadSettings("temp") == null; }
+			{ valid = generationManager.LoadSettings("temp") != null; }
 			catch (Newtonsoft.Json.JsonReaderException ex)
 			{ valid = false; }
 
