@@ -104,9 +104,12 @@ namespace LevelGenBot
 						&& words.Length > 1);
 				}
 
-				Task task;
+				Task task = null;
 				if (!msgIsCommand)
-					task = SendHelpMessage(msg, null);
+				{
+					if (msg.Channel is IDMChannel || msg.MentionedUsers.Contains(socketClient.CurrentUser))
+						task = SendHelpMessage(msg, null);
+				}
 				else
 				{
 					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
@@ -123,7 +126,8 @@ namespace LevelGenBot
 
 				try
 				{
-					await task;
+					if (task != null)
+						await task;
 				}
 				catch (Exception ex)
 				{
@@ -138,9 +142,9 @@ namespace LevelGenBot
 		}
 		private string[] ParseCommand(string msg)
 		{
-			// This method assumes msg has already been verified to be a command.
-			// Thus, there will be a > char marking the end of the bot mention.
-			int index = msg.IndexOf('>') + 1;
+			int index = 0;
+			if (msg.IndexOf('<') == 0) // If this command was initated with a mention at the front of it.
+				index = msg.IndexOf('>') + 1;
 			List<string> list = new List<string>();
 
 			do
@@ -218,7 +222,8 @@ namespace LevelGenBot
 			await msg.Author.SendMessageAsync(msg.Author.Mention +
 				", to use this bot send a message with the format `@me command [command arguments]`.\n" +
 				"If a command or argument contains a space, surround it with quotation marks.\n" +
-				"Example: `@·Level Gen Bot generate \"long race\"`\n" +
+				"Example: `@me \"long race\"`\n" +
+				"If you are sending the command via DMs, mentioning me is not required.\n" +
 				"List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + ".");
