@@ -82,7 +82,7 @@ namespace PR2_Level_Generator
 			JObject json = JObject.Parse(str);
 
 			Type t = Type.GetType(json["Generator Type"].ToString());
-			ILevelGenerator generator = Activator.CreateInstance(t) as ILevelGenerator;
+			generator = Activator.CreateInstance(t) as ILevelGenerator;
 
 			foreach (JProperty j in json["Generator Params"])
 				SetParamOrSetting(j.Name, j.Value.ToString());
