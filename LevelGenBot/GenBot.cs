@@ -9,6 +9,8 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 
+using PR2_Level_Generator;
+
 namespace LevelGenBot
 {
 	class GenBot
@@ -35,7 +37,7 @@ namespace LevelGenBot
 
 			socketClient.MessageReceived += SocketClient_MessageReceived;
 
-			socketClient.SetGameAsync("with .NET");
+			await socketClient.SetGameAsync("with .NET");
 		}
 
 		public async Task Disconnect()
@@ -71,16 +73,60 @@ namespace LevelGenBot
 		}
 
 
-		private Task SocketClient_MessageReceived(SocketMessage arg)
+		private async Task SocketClient_MessageReceived(SocketMessage msg)
 		{
-			if (arg.Author.Id != BotID)
+			if (msg.Author.Id != BotID)
 			{
-				if (arg.MentionedUsers.FirstOrDefault(u => u.Id == BotID) != null)
-					arg.Channel.SendMessageAsync("I don't do much yet.");
+				if (msg.MentionedUsers.FirstOrDefault(u => u.Id == BotID) != null)
+				{
+					Console.WriteLine("Received message: " + msg.Content);
+					string[] words = msg.Content.Split(' ');
+					MentionUtils.TryParseUser(words[0], out ulong mentionedID);
+					if (mentionedID != MentionUtils.ParseUser(socketClient.CurrentUser.Mention) || words.Length < 2)
+						await SendFormatHelpMessage(msg.Channel, msg.Author);
+					else if (words[1].ToLower() == "getsettings")
+						await SendSettingsListMessage(msg.Author);
+					else if (words[1].ToLower() == "generate")
+					{
+						if (words.Length < 3)
+							await SendFormatHelpMessage(msg.Channel, msg.Author);
+						else
+						{
+							string settingsName = msg.Content.Substring(words[0].Length + words[1].Length + 2);
+							GenerateLevel(settingsName);
+						}
+					}
+					else
+						await SendFormatHelpMessage(msg.Channel, msg.Author);
+				}
 			}
+		}
+		private async Task SendFormatHelpMessage(ISocketMessageChannel channel, SocketUser user)
+		{
+			await channel.SendMessageAsync(user.Mention + ", to generate a level, please use the following format:\n" +
+				"```@me generate [name of settings to use]```\n" +
+				"To see a list of available settings, say `@me getsettings`.");
+		}
+		private async Task SendSettingsListMessage(SocketUser user)
+		{
+			IEnumerable<string> filesList = Directory.EnumerateFiles("GenSettings", "*", SearchOption.AllDirectories);
+			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```");
+			foreach (string file in filesList)
+			{
+				settingsList.Append(new FileInfo(file).Name + "\n");
+			}
+			settingsList.Append("```");
 
-			return null;
-
+			await user.SendMessageAsync(settingsList.ToString());
+		}
+		private void GenerateLevel(string settingName)
+		{
+			throw new NotImplementedException();
+			// Must set username and token.
+			GenerationManager generationManager = new GenerationManager();
+			generationManager.LoadSettings(settingName);
+			generationManager.generator.GenerateMap();
+			generationManager.UploadLevel();
 		}
 	}
 }
