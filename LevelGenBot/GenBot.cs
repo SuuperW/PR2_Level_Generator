@@ -11,11 +11,15 @@ using Discord.WebSocket;
 
 using PR2_Level_Generator;
 
+using Newtonsoft.Json.Linq;
+
 namespace LevelGenBot
 {
 	class GenBot
 	{
-		string botToken;
+		string bot_token;
+		string pr2_username;
+		string pr2_token;
 
 		DiscordRestClient restClient;
 		DiscordSocketClient socketClient;
@@ -25,7 +29,10 @@ namespace LevelGenBot
 
 		public GenBot()
 		{
-			botToken = System.IO.File.ReadAllText("token.txt");
+			JObject json = JObject.Parse(File.ReadAllText("secrets.txt"));
+			bot_token = json["bot_token"].ToString();
+			pr2_username = json["pr2_username"].ToString();
+			pr2_token = json["pr2_token"].ToString();
 		}
 
 		public event Action Connected;
@@ -58,7 +65,7 @@ namespace LevelGenBot
 		async Task<DiscordRestClient> ConnectRestClient()
 		{
 			DiscordRestClient ret = new DiscordRestClient(new DiscordRestConfig());
-			await ret.LoginAsync(TokenType.Bot, botToken);
+			await ret.LoginAsync(TokenType.Bot, bot_token);
 
 			return ret;
 		}
@@ -66,7 +73,7 @@ namespace LevelGenBot
 		{
 			DiscordSocketClient client = new DiscordSocketClient();
 			client.Ready += () => { isConnected = true; Connected?.Invoke(); return null; };
-			await client.LoginAsync(TokenType.Bot, botToken);
+			await client.LoginAsync(TokenType.Bot, bot_token);
 			await client.StartAsync();
 
 			return client;
@@ -93,7 +100,10 @@ namespace LevelGenBot
 						else
 						{
 							string settingsName = msg.Content.Substring(words[0].Length + words[1].Length + 2);
-							GenerateLevel(settingsName);
+							string message = GenerateLevel(settingsName);
+							await msg.Channel.SendMessageAsync(msg.Author.Mention +
+								", I got this message from pr2hub.com:\n`" + message + "`");
+
 						}
 					}
 					else
@@ -119,14 +129,15 @@ namespace LevelGenBot
 
 			await user.SendMessageAsync(settingsList.ToString());
 		}
-		private void GenerateLevel(string settingName)
+		private string GenerateLevel(string settingName)
 		{
-			throw new NotImplementedException();
-			// Must set username and token.
 			GenerationManager generationManager = new GenerationManager();
-			generationManager.LoadSettings(settingName);
+			generationManager.username = pr2_username;
+			generationManager.login_token = pr2_token;
+
+			generationManager.LoadSettings(Path.Combine("GenSettings", settingName));
 			generationManager.generator.GenerateMap();
-			generationManager.UploadLevel();
+			return generationManager.UploadLevel();
 		}
 	}
 }

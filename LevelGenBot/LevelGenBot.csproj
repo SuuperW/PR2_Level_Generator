@@ -9,4 +9,10 @@
     <PackageReference Include="Discord.Net" Version="1.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="PR2_Level_Generator">
+      <HintPath>..\PR2_Level_Generator\bin\Debug\netcoreapp2.0\PR2_Level_Generator.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
