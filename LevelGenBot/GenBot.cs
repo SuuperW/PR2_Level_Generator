@@ -20,6 +20,7 @@ namespace LevelGenBot
 		string bot_token;
 		string pr2_username;
 		string pr2_token;
+		const string settingsPath = "GenSettings";
 
 		DiscordRestClient restClient;
 		DiscordSocketClient socketClient;
@@ -166,8 +167,10 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("help", SendHelpMessage);
 			everybodyBotCommands.Add("getsettings", SendSettingsListMessage);
 			everybodyBotCommands.Add("generate", GenerateLevel);
+			everybodyBotCommands.Add("get_settings", GetSettings);
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
+			trustedBotCommands.Add("set_settings", SetSettings);
 
 			ownerBotCommands = new SortedList<string, BotCommand>();
 			ownerBotCommands.Add("add_trusted_user", AddTrustedUser);
@@ -205,7 +208,7 @@ namespace LevelGenBot
 		}
 		private async Task SendSettingsListMessage(SocketMessage msg, params string[] args)
 		{
-			IEnumerable<string> filesList = Directory.EnumerateFiles("GenSettings", "*", SearchOption.AllDirectories);
+			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
 			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```");
 			foreach (string file in filesList)
 			{
@@ -230,7 +233,7 @@ namespace LevelGenBot
 			generationManager.username = pr2_username;
 			generationManager.login_token = pr2_token;
 
-			if (generationManager.LoadSettings(Path.Combine("GenSettings", args[1])) == null)
+			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
 					"`" + args[1] + "` is not a recognized setting.");
@@ -286,6 +289,52 @@ namespace LevelGenBot
 			}
 
 			await msg.Channel.SendMessageAsync("Removed " + count + " user(s) from trusted user list.");
+		}
+
+		private async Task GetSettings(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " + 
+					msg.Author.Mention + "!");
+				return;
+			}
+
+			string settingsName = args[1];
+
+			GenerationManager generationManager = new GenerationManager();
+			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
+					"`" + args[1] + "` is not a recognized setting.");
+				return;
+			}
+
+			string str = generationManager.GetSaveObject().ToString();
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for '" +
+				args[1] + "'\n```" + str + "```");
+		}
+		private async Task SetSettings(SocketMessage msg, params string[] args)
+		{
+			if (msg.Attachments.Count != 1)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", please upload a file to use this command.");
+				return;
+			}
+
+			Attachment a = msg.Attachments.First();
+			File.WriteAllText("temp", a.ToString());
+
+			GenerationManager generationManager = new GenerationManager();
+			if (generationManager.LoadSettings("temp") == null)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
+				return;
+			}
+
+			File.WriteAllText(Path.Combine(settingsPath, a.Filename), a.ToString());
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
+				a.Filename + "' have been saved.");
 		}
 
 		#endregion
