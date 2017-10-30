@@ -172,13 +172,28 @@ namespace LevelGenBot
 			ownerBotCommands = new SortedList<string, BotCommand>();
 			ownerBotCommands.Add("add_trusted_user", AddTrustedUser);
 			ownerBotCommands.Add("remove_trusted_user", RemoveTrustedUser);
+			ownerBotCommands.Add("gtfo", async (m, a) => {
+				await m.Channel.SendMessageAsync("I'm sorry you feel that way, " + m.Author.Mention +
+					". :(\nI guess I'll leave now. Bye guys!");
+				Disconnect();
+			});
 		}
 
 		private async Task SendHelpMessage(SocketMessage msg, params string[] args)
 		{
 			StringBuilder availableCommands = new StringBuilder();
 			foreach (KeyValuePair<string, BotCommand> kvp in everybodyBotCommands)
-				availableCommands.Append("\n" + kvp.Key); // \n first compensates for a bug in Discord
+				availableCommands.Append("\n" + kvp.Key); // \n first because first line tells Discord how to format
+			if (specialUsers.IsUserTrusted(msg.Author.Id))
+			{
+				foreach (KeyValuePair<string, BotCommand> kvp in trustedBotCommands)
+					availableCommands.Append("\n" + kvp.Key);
+			}
+			if (specialUsers.Owner == msg.Author.Id)
+			{
+				foreach (KeyValuePair<string, BotCommand> kvp in ownerBotCommands)
+					availableCommands.Append("\n" + kvp.Key);
+			}
 
 			await msg.Author.SendMessageAsync(msg.Author.Mention +
 				", to use this bot send a message with the format `@me command [command arguments]`.\n" +
