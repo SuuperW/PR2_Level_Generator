@@ -24,6 +24,12 @@ namespace LevelGenBot
 			while (userInput != "e")
 			{
 				userInput = Console.ReadLine();
+
+				if (userInput == "connect")
+				{
+					if (!bot.isConnected)
+						bot.ConnectAndStart().Wait();
+				}
 			}
 
 			bot.Disconnect().Wait();
