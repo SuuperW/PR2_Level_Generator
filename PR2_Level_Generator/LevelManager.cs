@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 
 using Newtonsoft.Json.Linq;
 
@@ -16,10 +17,10 @@ namespace PR2_Level_Generator
 		public ILevelGenerator generator;
 		private MapLE Map { get => generator.Map; }
 
-		public string UploadLevel()
+		public async Task<string> UploadLevel()
 		{
 			string LData = GetLevelData() + "&token=" + login_token;
-			return PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
+			return await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
 		}
 		public bool SaveLevel(string path)
 		{
@@ -122,41 +123,32 @@ namespace PR2_Level_Generator
 		}
 
 
-		private string PostLoadHTTP(string url, string postData)
+		private async Task<string> PostLoadHTTP(string url, string postData)
 		{
+			byte[] byteArray = Encoding.UTF8.GetBytes(postData);
+
 			// Create a request using a URL that can receive a post. 
 			WebRequest request = WebRequest.Create(url);
-			// Set the Method property of the request to POST.
 			request.Method = "POST";
-			// Create POST data and convert it to a byte array.
-			byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-			// Set the ContentType property of the WebRequest.
 			request.ContentType = "application/x-www-form-urlencoded";
-			// Set the ContentLength property of the WebRequest.
 			request.ContentLength = byteArray.Length;
+
 			// Get the request stream.
-			Stream dataStream = request.GetRequestStream();
+			Stream dataStream = await request.GetRequestStreamAsync();
 			// Write the data to the request stream.
-			dataStream.Write(byteArray, 0, byteArray.Length);
+			await dataStream.WriteAsync(byteArray, 0, byteArray.Length);
 			// Close the Stream object.
 			dataStream.Close();
+
 			// Get the response.
-			WebResponse response = null;
-			try
-			{
-				response = request.GetResponse();
-			}
-			catch (Exception ex)
-			{
-				if (ex is Exception)
-					ex = null;
-			}
+			WebResponse response = await request.GetResponseAsync();
 			// Get the stream containing content returned by the server.
 			dataStream = response.GetResponseStream();
 			// Open the stream using a StreamReader for easy access.
 			StreamReader reader = new StreamReader(dataStream);
 			// Read the content.
-			string responseFromServer = reader.ReadToEnd();
+			string responseFromServer = await reader.ReadToEndAsync();
+
 			// Clean up the streams.
 			reader.Close();
 			dataStream.Close();
