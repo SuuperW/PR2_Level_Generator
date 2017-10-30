@@ -4,6 +4,8 @@ using System.Text;
 using System.IO;
 using System.Net;
 
+using Newtonsoft.Json.Linq;
+
 namespace PR2_Level_Generator
 {
 	public class GenerationManager
@@ -38,7 +40,7 @@ namespace PR2_Level_Generator
 			return Map.GetData();
 		}
 
-		public bool SaveSettings(string path, ILevelGenerator gen)
+		public bool SaveSettings(string path)
 		{
 			if (!Directory.GetParent(path).Exists)
 			{
@@ -46,29 +48,46 @@ namespace PR2_Level_Generator
 				return false;
 			}
 
-			string str = gen.GetSaveString();
-			File.WriteAllText(path, str);
+			JObject json = GetSaveObject();
+			File.WriteAllText(path, json.ToString());
 
 			return true;
+		}
+		public JObject GetSaveObject()
+		{
+			JObject json = new JObject();
+			json["Generator Type"] = generator.GetType().ToString();
+
+			json["Generator Params"] = new JObject();
+			string[] paramNames = generator.GetParamNames();
+			for (int i = 0; i < paramNames.Length; i++)
+				json["Generator Params"][paramNames[i]] = generator.GetParamValue(paramNames[i]);
+
+			json["Map Settings"] = new JObject();
+			string[] settingNames = generator.Map.SettingNames;
+			for (int i = 0; i < settingNames.Length; i++)
+				json["Map Settings"][settingNames[i]] = generator.Map.GetSetting(settingNames[i]);
+
+			return json;
 		}
 		public ILevelGenerator LoadSettings(string path)
 		{
 			if (!File.Exists(path))
-            {
-                Console.WriteLine("Failed to load settings; file does not exist.");
-                return null;
-            }
-
-            string[] str = File.ReadAllText(path).Split('\n');
-
-            Type t = Type.GetType(str[0]);
-            ILevelGenerator generator = Activator.CreateInstance(t) as ILevelGenerator;
-
-			for (int i = 1; i < str.Length; i++)
 			{
-				string[] nameValue = str[i].Split(':');
-				SetParamOrSetting(nameValue[0], nameValue[1]);
+				Console.WriteLine("Failed to load settings; file does not exist.");
+				return null;
 			}
+
+			string str = File.ReadAllText(path);
+			JObject json = JObject.Parse(str);
+
+			Type t = Type.GetType(json["Generator Type"].ToString());
+			ILevelGenerator generator = Activator.CreateInstance(t) as ILevelGenerator;
+
+			foreach (JProperty j in json["Generator Params"])
+				SetParamOrSetting(j.Name, j.Value.ToString());
+			foreach (JProperty j in json["Map Settings"])
+				SetParamOrSetting(j.Name, j.Value.ToString());
 
 			return generator;
 		}
@@ -76,32 +95,31 @@ namespace PR2_Level_Generator
 		public bool SetParamOrSetting(string name, string value)
 		{
 			int paramIndex = Array.IndexOf(generator.GetParamNames(), name);
-            if (paramIndex == -1) // Level setting
-                return Map.SetSetting(name, value);
-            else
-            {
-                double val;
-                if (double.TryParse(value, out val))
-                    generator.SetParamValue(name, val);
-                else
-                {
-                    Console.WriteLine("Value \'" + value + "\' could not be parsed.");
-                    return false;
-                }
-                return true;
-            }
+			if (paramIndex == -1) // Level setting
+				return Map.SetSetting(name, value);
+			else
+			{
+				double val;
+				if (double.TryParse(value, out val))
+					generator.SetParamValue(name, val);
+				else
+				{
+					Console.WriteLine("Value \'" + value + "\' could not be parsed.");
+					return false;
+				}
+				return true;
+			}
 		}
 
 		public string GetParamOrSetting(string name)
 		{
 			name = name.ToLower();
 			int paramIndex = Array.IndexOf(generator.GetParamNames(), name);
-            if (paramIndex == -1) // Level setting
-                return Map.GetSetting(name);
-            else
+			if (paramIndex == -1) // Level setting
+				return Map.GetSetting(name);
+			else
 				return generator.GetParamValue(name).ToString();
 		}
-
 
 
 		private string PostLoadHTTP(string url, string postData)
