@@ -27,12 +27,16 @@ namespace LevelGenBot
 		ulong BotID { get => socketClient.CurrentUser.Id; }
 		public bool isConnected = false;
 
+		SpecialUsersCollection specialUsers;
+
 		public GenBot()
 		{
 			JObject json = JObject.Parse(File.ReadAllText("secrets.txt"));
 			bot_token = json["bot_token"].ToString();
 			pr2_username = json["pr2_username"].ToString();
 			pr2_token = json["pr2_token"].ToString();
+
+			specialUsers = new SpecialUsersCollection("special users.txt");
 
 			InitializeBotCommandsList();
 		}
@@ -156,6 +160,8 @@ namespace LevelGenBot
 			botCommands.Add("help", SendHelpMessage);
 			botCommands.Add("getsettings", SendSettingsListMessage);
 			botCommands.Add("generate", GenerateLevel);
+			botCommands.Add("add_trusted_user", AddTrustedUser);
+			botCommands.Add("remove_trusted_user", RemoveTrustedUser);
 		}
 
 		private async Task SendHelpMessage(SocketMessage msg, params string[] args)
@@ -226,6 +232,47 @@ namespace LevelGenBot
 				"To see a list of available settings, say `@me getsettings`.");
 
 			Console.WriteLine("Sent generate help message to " + msg.Author.Username + ".");
+		}
+
+		private async Task AddTrustedUser(SocketMessage msg, params string[] args)
+		{
+			if (msg.Author.Id != specialUsers.Owner)
+			{
+				await msg.Author.SendMessageAsync("You do not have permission to use this command.");
+				return;
+			}
+
+			int count = 0;
+			foreach (SocketUser user in msg.MentionedUsers)
+			{
+				if (user.Id != BotID)
+				{
+					if (specialUsers.AddTrustedUser(user.Id))
+						count++;
+				}
+			}
+
+			await msg.Channel.SendMessageAsync("Added " + count + " user(s) to trusted user list.");
+		}
+		private async Task RemoveTrustedUser(SocketMessage msg, params string[] args)
+		{
+			if (msg.Author.Id != specialUsers.Owner)
+			{
+				await msg.Author.SendMessageAsync("You do not have permission to use this command.");
+				return;
+			}
+
+			int count = 0;
+			foreach (SocketUser user in msg.MentionedUsers)
+			{
+				if (user.Id != BotID)
+				{
+					if (specialUsers.RemoveTrustedUser(user.Id))
+						count++;
+				}
+			}
+
+			await msg.Channel.SendMessageAsync("Removed " + count + " user(s) from trusted user list.");
 		}
 
 		#endregion
