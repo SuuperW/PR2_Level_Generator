@@ -103,8 +103,12 @@ namespace LevelGenBot
 					else
 					{// It is.
 						string[] args = ParseCommand(msg.Content);
-						if (botCommands.ContainsKey(args[0]))
-							task = botCommands[args[0]](msg, args);
+						if (everybodyBotCommands.ContainsKey(args[0]))
+							task = everybodyBotCommands[args[0]](msg, args);
+						else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(args[0]))
+							task = trustedBotCommands[args[0]](msg, args);
+						else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(args[0]))
+							task = ownerBotCommands[args[0]](msg, args);
 						else
 							task = SendHelpMessage(msg, null);
 					}
@@ -153,21 +157,27 @@ namespace LevelGenBot
 
 		#region "Bot Commands"
 		private delegate Task BotCommand(SocketMessage msg, params string[] args);
-		private SortedList<string, BotCommand> botCommands;
+		private SortedList<string, BotCommand> everybodyBotCommands;
+		private SortedList<string, BotCommand> trustedBotCommands;
+		private SortedList<string, BotCommand> ownerBotCommands;
 		private void InitializeBotCommandsList()
 		{
-			botCommands = new SortedList<string, BotCommand>();
-			botCommands.Add("help", SendHelpMessage);
-			botCommands.Add("getsettings", SendSettingsListMessage);
-			botCommands.Add("generate", GenerateLevel);
-			botCommands.Add("add_trusted_user", AddTrustedUser);
-			botCommands.Add("remove_trusted_user", RemoveTrustedUser);
+			everybodyBotCommands = new SortedList<string, BotCommand>();
+			everybodyBotCommands.Add("help", SendHelpMessage);
+			everybodyBotCommands.Add("getsettings", SendSettingsListMessage);
+			everybodyBotCommands.Add("generate", GenerateLevel);
+
+			trustedBotCommands = new SortedList<string, BotCommand>();
+
+			ownerBotCommands = new SortedList<string, BotCommand>();
+			ownerBotCommands.Add("add_trusted_user", AddTrustedUser);
+			ownerBotCommands.Add("remove_trusted_user", RemoveTrustedUser);
 		}
 
 		private async Task SendHelpMessage(SocketMessage msg, params string[] args)
 		{
 			StringBuilder availableCommands = new StringBuilder();
-			foreach (KeyValuePair<string, BotCommand> kvp in botCommands)
+			foreach (KeyValuePair<string, BotCommand> kvp in everybodyBotCommands)
 				availableCommands.Append("\n" + kvp.Key); // \n first compensates for a bug in Discord
 
 			await msg.Author.SendMessageAsync(msg.Author.Mention +
@@ -236,12 +246,6 @@ namespace LevelGenBot
 
 		private async Task AddTrustedUser(SocketMessage msg, params string[] args)
 		{
-			if (msg.Author.Id != specialUsers.Owner)
-			{
-				await msg.Author.SendMessageAsync("You do not have permission to use this command.");
-				return;
-			}
-
 			int count = 0;
 			foreach (SocketUser user in msg.MentionedUsers)
 			{
@@ -256,12 +260,6 @@ namespace LevelGenBot
 		}
 		private async Task RemoveTrustedUser(SocketMessage msg, params string[] args)
 		{
-			if (msg.Author.Id != specialUsers.Owner)
-			{
-				await msg.Author.SendMessageAsync("You do not have permission to use this command.");
-				return;
-			}
-
 			int count = 0;
 			foreach (SocketUser user in msg.MentionedUsers)
 			{
