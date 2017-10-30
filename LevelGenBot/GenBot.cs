@@ -142,7 +142,7 @@ namespace LevelGenBot
 		}
 		private string[] ParseCommand(string msg)
 		{
-			int index = 0;
+			int index = -1;
 			if (msg.IndexOf('<') == 0) // If this command was initated with a mention at the front of it.
 				index = msg.IndexOf('>') + 1;
 			List<string> list = new List<string>();
