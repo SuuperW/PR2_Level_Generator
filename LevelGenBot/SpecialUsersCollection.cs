@@ -33,7 +33,7 @@ namespace LevelGenBot
 
 		public bool IsUserTrusted(ulong userID)
 		{
-			return TrustedUsers.FirstOrDefault(
+			return userID == Owner || TrustedUsers.FirstOrDefault(
 				(t) => t.ToString() == userID.ToString()) != null;
 		}
 
