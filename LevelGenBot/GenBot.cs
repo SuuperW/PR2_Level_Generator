@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
+using System.Net;
 
 using Discord;
 using Discord.Rest;
@@ -91,32 +92,47 @@ namespace LevelGenBot
 		{
 			if (msg.Author.Id != BotID)
 			{
-				if (msg.MentionedUsers.FirstOrDefault(u => u.Id == BotID) != null)
+				// Ensure command is in proper format (@bot args)
+				bool msgIsCommand = false;
+				if (msg.Channel is IDMChannel)
+					msgIsCommand = true;
+				else
 				{
-					Console.WriteLine("Received message from " + msg.Author.Username + ": " + msg.Content);
-					Task task;
-
-					// Ensure command is in proper format (@bot args)
 					string[] words = msg.Content.Split(' ');
 					MentionUtils.TryParseUser(words[0], out ulong mentionedID);
-					if (mentionedID != MentionUtils.ParseUser(socketClient.CurrentUser.Mention) || words.Length < 2)
-						task = SendHelpMessage(msg, null);
-					else
-					{// It is.
-						string[] args = ParseCommand(msg.Content);
-						if (everybodyBotCommands.ContainsKey(args[0]))
-							task = everybodyBotCommands[args[0]](msg, args);
-						else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(args[0]))
-							task = trustedBotCommands[args[0]](msg, args);
-						else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(args[0]))
-							task = ownerBotCommands[args[0]](msg, args);
-						else
-							task = SendHelpMessage(msg, null);
-					}
+					msgIsCommand = (mentionedID == MentionUtils.ParseUser(socketClient.CurrentUser.Mention)
+						&& words.Length > 1);
+				}
 
+				Task task;
+				if (!msgIsCommand)
+					task = SendHelpMessage(msg, null);
+				else
+				{
+					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
+					string[] args = ParseCommand(msg.Content);
+					if (everybodyBotCommands.ContainsKey(args[0]))
+						task = everybodyBotCommands[args[0]](msg, args);
+					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(args[0]))
+						task = trustedBotCommands[args[0]](msg, args);
+					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(args[0]))
+						task = ownerBotCommands[args[0]](msg, args);
+					else
+						task = SendHelpMessage(msg, null);
+				}
+
+				try
+				{
 					await task;
-					if (task.Exception != null)
-						throw task.Exception;
+				}
+				catch (Exception ex)
+				{
+					//System.Diagnostics.Debugger.Break();
+					await msg.Channel.SendMessageAsync(msg.Author.Mention +
+						", I have encountered an error and don't know what to do with it. :(" +
+						"Error details have been sent to my owner.");
+					await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("Error!  " +
+						"`" + ex.Message + "`\n```" + ex.StackTrace + "```");
 				}
 			}
 		}
@@ -175,7 +191,8 @@ namespace LevelGenBot
 			ownerBotCommands = new SortedList<string, BotCommand>();
 			ownerBotCommands.Add("add_trusted_user", AddTrustedUser);
 			ownerBotCommands.Add("remove_trusted_user", RemoveTrustedUser);
-			ownerBotCommands.Add("gtfo", async (m, a) => {
+			ownerBotCommands.Add("gtfo", async (m, a) =>
+			{
 				await m.Channel.SendMessageAsync("I'm sorry you feel that way, " + m.Author.Mention +
 					". :(\nI guess I'll leave now. Bye guys!");
 				Disconnect();
@@ -295,7 +312,7 @@ namespace LevelGenBot
 		{
 			if (args.Length < 2)
 			{
-				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " + 
+				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " +
 					msg.Author.Mention + "!");
 				return;
 			}
@@ -323,18 +340,32 @@ namespace LevelGenBot
 			}
 
 			Attachment a = msg.Attachments.First();
-			File.WriteAllText("temp", a.ToString());
+			HttpWebRequest request = HttpWebRequest.CreateHttp(a.Url);
+			WebResponse response = await request.GetResponseAsync();
+			StreamReader streamReader = new StreamReader(response.GetResponseStream());
+			string str = await streamReader.ReadToEndAsync();
+
+			File.WriteAllText("temp", str);
 
 			GenerationManager generationManager = new GenerationManager();
-			if (generationManager.LoadSettings("temp") == null)
+			bool valid = false;
+			try
+			{ valid = generationManager.LoadSettings("temp") == null; }
+			catch (Newtonsoft.Json.JsonReaderException ex)
+			{ valid = false; }
+
+			if (!valid)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
 				return;
 			}
 
-			File.WriteAllText(Path.Combine(settingsPath, a.Filename), a.ToString());
+
+			File.WriteAllText(Path.Combine(settingsPath, a.Filename), str);
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
 				a.Filename + "' have been saved.");
+
+			File.Delete("temp");
 		}
 
 		#endregion
