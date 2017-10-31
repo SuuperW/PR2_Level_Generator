@@ -12,6 +12,7 @@ namespace LevelGenBot
 		public delegate Task<bool> CommandDelegate(SocketMessage msg, params string[] args);
 
 		public CommandDelegate Delegate { get; private set; }
+		public string Name { get => Delegate.Method.Name; }
 
 		public double MinDelay { get; set; }
 		public double MinDelayPerUser { get; set; }

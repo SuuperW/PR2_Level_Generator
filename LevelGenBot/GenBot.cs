@@ -102,18 +102,20 @@ namespace LevelGenBot
 				}
 
 				BotCommand command = null;
-				string commandStr = null;
 				string[] args = null;
 				if (!msgIsCommand)
 				{
-					if (msg.Channel is IDMChannel || msg.MentionedUsers.Contains(socketClient.CurrentUser))
+					if (msg.Channel is IDMChannel || msg.MentionedUsers.FirstOrDefault(
+					  (u) => u.Id == socketClient.CurrentUser.Id) != null)
+					{
 						command = everybodyBotCommands["help"];
+					}
 				}
 				else
 				{
 					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
 					args = ParseCommand(msg.Content);
-					commandStr = args[0].ToLower();
+					string commandStr = args[0].ToLower();
 					if (everybodyBotCommands.ContainsKey(commandStr))
 						command = everybodyBotCommands[commandStr];
 					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(commandStr))
@@ -121,10 +123,7 @@ namespace LevelGenBot
 					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
 						command = ownerBotCommands[commandStr];
 					else
-					{
 						command = everybodyBotCommands["help"];
-						commandStr = "help";
-					}
 				}
 
 				try
@@ -132,12 +131,13 @@ namespace LevelGenBot
 					if (command != null)
 					{
 						bool tooFast = false;
-						if (commandHistory.TimeSinceLastUse(commandStr) < command.MinDelay)
+						string commandName = command.Name;
+						if (commandHistory.TimeSinceLastUse(commandName) < command.MinDelay)
 						{
 							await msg.Author.SendMessageAsync("I've been getting too many of those commands lately. Please try again later.");
 							tooFast = true;
 						}
-						else if (commandHistory.TimeSinceLastUse(commandStr, msg.Author.Id) < command.MinDelayPerUser)
+						else if (commandHistory.TimeSinceLastUse(commandName, msg.Author.Id) < command.MinDelayPerUser)
 						{
 							await msg.Author.SendMessageAsync("You may only use that command once every " +
 							  command.MinDelayPerUser + " seconds.");
@@ -147,7 +147,7 @@ namespace LevelGenBot
 						if (!tooFast)
 						{
 							if (await command.Delegate(msg, args))
-								commandHistory.AddCommand(commandStr, msg.Author.Id);
+								commandHistory.AddCommand(commandName, msg.Author.Id);
 						}
 					}
 				}
@@ -189,7 +189,7 @@ namespace LevelGenBot
 						newIndex = msg.Length;
 					else
 						newIndex = space;
-					list.Add(msg.Substring(index + 1, newIndex - index - 1));
+					list.Add(msg.Substring(index, newIndex - index));
 				}
 
 				index = newIndex;
