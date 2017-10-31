@@ -15,6 +15,7 @@ namespace LevelGenBot
 
 		public ulong Owner { get => json["owner"].Value<ulong>(); }
 		private JArray TrustedUsers { get => json["trusted"] as JArray; }
+		private JArray BannedUsers { get => json["banned"] as JArray; }
 
 		public SpecialUsersCollection(string path)
 		{
@@ -27,6 +28,8 @@ namespace LevelGenBot
 				json["owner"] = 0ul;
 			if (json["trusted"] == null)
 				json["trusted"] = new JArray();
+			if (json["banned"] == null)
+				json["banned"] = new JArray();
 
 			this.path = path;
 		}
@@ -34,6 +37,11 @@ namespace LevelGenBot
 		public bool IsUserTrusted(ulong userID)
 		{
 			return userID == Owner || TrustedUsers.FirstOrDefault(
+				(t) => t.ToString() == userID.ToString()) != null;
+		}
+		public bool IsUserBanned(ulong userID)
+		{
+			return userID != Owner && BannedUsers.FirstOrDefault(
 				(t) => t.ToString() == userID.ToString()) != null;
 		}
 
@@ -52,6 +60,27 @@ namespace LevelGenBot
 			if (IsUserTrusted(userID))
 			{
 				TrustedUsers.Remove(userID);
+				Save();
+				return true;
+			}
+			return false;
+		}
+
+		public bool BanUser(ulong userID)
+		{
+			if (!IsUserBanned(userID))
+			{
+				BannedUsers.Add(userID);
+				Save();
+				return true;
+			}
+			return false;
+		}
+		public bool UnbanUser(ulong userID)
+		{
+			if (IsUserBanned(userID))
+			{
+				BannedUsers.Remove(userID);
 				Save();
 				return true;
 			}
