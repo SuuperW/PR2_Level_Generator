@@ -32,6 +32,7 @@ namespace LevelGenBot
 		public bool isConnected = false;
 
 		SpecialUsersCollection specialUsers;
+		CommandHistory commandHistory = new CommandHistory();
 
 		public GenBot()
 		{
@@ -106,30 +107,63 @@ namespace LevelGenBot
 						&& words.Length > 1);
 				}
 
-				Task task = null;
+				BotCommand commandDelegate = null;
+				string command = null;
+				string[] args = null;
 				if (!msgIsCommand)
 				{
 					if (msg.Channel is IDMChannel || msg.MentionedUsers.Contains(socketClient.CurrentUser))
-						task = SendHelpMessage(msg, null);
+						commandDelegate = everybodyBotCommands["help"];
 				}
 				else
 				{
 					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
-					string[] args = ParseCommand(msg.Content);
-					if (everybodyBotCommands.ContainsKey(args[0]))
-						task = everybodyBotCommands[args[0]](msg, args);
-					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(args[0]))
-						task = trustedBotCommands[args[0]](msg, args);
-					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(args[0]))
-						task = ownerBotCommands[args[0]](msg, args);
+					args = ParseCommand(msg.Content);
+					command = args[0].ToLower();
+					if (everybodyBotCommands.ContainsKey(command))
+						commandDelegate = everybodyBotCommands[command];
+					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(command))
+						commandDelegate = trustedBotCommands[command];
+					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(command))
+						commandDelegate = ownerBotCommands[command];
 					else
-						task = SendHelpMessage(msg, null);
+					{
+						commandDelegate = everybodyBotCommands["help"];
+						command = "help";
+					}
 				}
 
 				try
 				{
-					if (task != null)
-						await task;
+					if (commandDelegate != null)
+					{
+						bool tooFast = false;
+						if (commandHistory.TimeSinceLastCommand(msg.Author.Id) < 2)
+						{
+							if (command != "help")
+								await msg.Author.SendMessageAsync("Slow down, yo!");
+							tooFast = true;
+						}
+						else if (command == "generate")
+						{
+							if (commandHistory.TimeSinceLastUse(command) < 5)
+							{
+								await msg.Author.SendMessageAsync("I've been getting too many generate commands lately. Please try again later.");
+								tooFast = true;
+							}
+							else if (commandHistory.TimeSinceLastUse(command, msg.Author.Id) < 30)
+							{
+								await msg.Author.SendMessageAsync("You may only use that command once every 30 seconds.");
+								tooFast = true;
+							}
+						}
+						
+						if (!tooFast)
+						{
+							await commandDelegate(msg, args);
+							commandHistory.AddCommand(command, msg.Author.Id);
+						}
+					}
 				}
 				catch (Exception ex)
 				{
