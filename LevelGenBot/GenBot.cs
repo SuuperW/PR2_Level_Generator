@@ -221,7 +221,7 @@ namespace LevelGenBot
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
 			everybodyBotCommands.Add("help", SendHelpMessage);
-			everybodyBotCommands.Add("getsettings", SendSettingsListMessage);
+			everybodyBotCommands.Add("get_list", SendSettingsListMessage);
 			everybodyBotCommands.Add("generate", GenerateLevel);
 			everybodyBotCommands.Add("get_settings", GetSettings);
 
