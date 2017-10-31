@@ -23,6 +23,8 @@ namespace LevelGenBot
 		string pr2_token;
 		const string settingsPath = "GenSettings";
 
+		int tempFileID = 0;
+
 		DiscordRestClient restClient;
 		DiscordSocketClient socketClient;
 
@@ -358,12 +360,14 @@ namespace LevelGenBot
 			StreamReader streamReader = new StreamReader(response.GetResponseStream());
 			string str = await streamReader.ReadToEndAsync();
 
-			File.WriteAllText("temp", str);
+			string fileName = "temp" + tempFileID;
+			tempFileID++;
+			File.WriteAllText(fileName, str);
 
 			GenerationManager generationManager = new GenerationManager();
 			bool valid = false;
 			try
-			{ valid = generationManager.LoadSettings("temp") != null; }
+			{ valid = generationManager.LoadSettings(fileName) != null; }
 			catch (Newtonsoft.Json.JsonReaderException ex)
 			{ valid = false; }
 
@@ -378,7 +382,7 @@ namespace LevelGenBot
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
 				a.Filename + "' have been saved.");
 
-			File.Delete("temp");
+			File.Delete(fileName);
 		}
 
 		#endregion
