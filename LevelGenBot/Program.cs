@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -12,13 +13,20 @@ namespace LevelGenBot
 	class Program
 	{
 		static GenBot bot;
+		static bool end = false;
 
 		static void Main(string[] args)
+		{
+			MainAsync();
+
+			while (!end) Task.Delay(500).Wait();
+		}
+		private static async Task MainAsync()
 		{
 			bot = new GenBot();
 			bot.Connected += Connected;
 			bot.Disconnected += Disconnected;
-			bot.ConnectAndStart().Wait();
+			await bot.ConnectAndStart();
 
 			string userInput = "";
 			while (userInput != "e")
@@ -27,14 +35,26 @@ namespace LevelGenBot
 
 				if (userInput == "connect")
 				{
-					if (!bot.isConnected)
-						bot.ConnectAndStart().Wait();
+					if (!bot.IsConnected)
+						await bot.ConnectAndStart();
+				}
+				else if (userInput == "dc")
+				{
+					if (bot.IsConnected)
+					{
+						await bot.Disconnect();
+						while (bot.IsConnected)
+							Task.Delay(250);
+						Console.WriteLine("Bot reports offline.");
+					}
 				}
 			}
 
-			bot.Disconnect().Wait();
-			while (bot.isConnected)
+			await bot.Disconnect();
+			while (bot.IsConnected)
 				Task.Delay(250);
+
+			end = true;
 		}
 
 		static void Connected()

@@ -29,7 +29,7 @@ namespace LevelGenBot
 		DiscordSocketClient socketClient;
 
 		ulong BotID { get => socketClient.CurrentUser.Id; }
-		public bool isConnected = false;
+		public bool IsConnected { get => socketClient.ConnectionState >= ConnectionState.Connected; }
 
 		SpecialUsersCollection specialUsers;
 		CommandHistory commandHistory = new CommandHistory();
@@ -60,17 +60,9 @@ namespace LevelGenBot
 
 		public async Task Disconnect()
 		{
-			socketClient.Disconnected += (e) =>
-			{
-				isConnected = false;
-				Disconnected?.Invoke();
-				return null;
-			};
-			await socketClient.SetGameAsync("I'm done.");
 			await restClient.LogoutAsync();
-			await socketClient.SetStatusAsync(UserStatus.Offline);
+			await socketClient.SetStatusAsync(UserStatus.Invisible);
 			await socketClient.StopAsync();
-			await socketClient.LogoutAsync();
 		}
 
 		async Task<DiscordRestClient> ConnectRestClient()
@@ -83,7 +75,9 @@ namespace LevelGenBot
 		async Task<DiscordSocketClient> ConnectSocketClient()
 		{
 			DiscordSocketClient client = new DiscordSocketClient();
-			client.Ready += () => { isConnected = true; Connected?.Invoke(); return null; };
+			client.Ready += () => { Connected?.Invoke(); return null; };
+			client.Disconnected += (e) => { Disconnected?.Invoke(); return null; };
+
 			await client.LoginAsync(TokenType.Bot, bot_token);
 			await client.StartAsync();
 
