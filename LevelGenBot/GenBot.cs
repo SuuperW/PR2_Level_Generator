@@ -149,7 +149,7 @@ namespace LevelGenBot
 				File.WriteAllText(fileName, "Error: " + ex.GetType().ToString() + "\n\n" +
 				  ex.Message + "\n\n" + ex.StackTrace);
 				IDMChannel channel = await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync();
-				channel.SendFileAsync(fileName, "I encountered an error. Here are the details.");
+				await channel.SendFileAsync(fileName, "I encountered an error. Here are the details.");
 				File.Delete(fileName);
 			}
 		}
