@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using System.Linq;
 
 using Newtonsoft.Json.Linq;
 
@@ -19,7 +20,9 @@ namespace PR2_Level_Generator
 
 		public async Task<string> UploadLevel()
 		{
+			string oldNote = SetLevelNote();
 			string LData = GetLevelData() + "&token=" + login_token;
+			Map.SetSetting("note", oldNote);
 			return await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
 		}
 		public bool SaveLevel(string path)
@@ -30,7 +33,9 @@ namespace PR2_Level_Generator
 				return false;
 			}
 
+			string oldNote = SetLevelNote();
 			string LData = GetLevelData();
+			Map.SetSetting("note", oldNote);
 			File.WriteAllText(path, LData);
 
 			return true;
@@ -40,6 +45,26 @@ namespace PR2_Level_Generator
 			Map.userName = username;
 			return Map.GetData();
 		}
+		private string SetLevelNote()
+		{
+			// Append parameters to the note.
+			double? oldSeed = null;
+			if (generator.GetParamNames().Contains("Seed"))
+			{
+				oldSeed = generator.GetParamValue("seed");
+				generator.SetParamValue("seed", generator.LastSeed);
+			}
+
+			string oldNote = Map.GetSetting("note");
+			Map.SetSetting("note", oldNote + "Gen: " + generator.GetType().ToString().Split('.').Last() + "\n" +
+				GetSaveObject()["Generator Params"].ToString().Replace("\r\n", "\n").Replace(" ", ""));
+
+			if (oldSeed != null)
+				generator.SetParamValue("seed", oldSeed.Value);
+
+			return oldNote;
+		}
+
 
 		public bool SaveSettings(string path)
 		{
