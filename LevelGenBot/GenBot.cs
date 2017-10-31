@@ -27,7 +27,7 @@ namespace LevelGenBot
 		private string GetTempFileName()
 		{
 			tempFileID++;
-			return "temp" + tempFileID;
+			return "temp/" + tempFileID;
 		}
 
 		DiscordRestClient restClient;
@@ -49,6 +49,11 @@ namespace LevelGenBot
 			specialUsers = new SpecialUsersCollection("special users.txt");
 
 			InitializeBotCommandsList();
+
+			// Delete any temp files that still exist from last time the bot was run.
+			if (Directory.Exists("temp"))
+				Directory.Delete("temp");
+			Directory.CreateDirectory("temp");
 		}
 
 		public event Action Connected;
