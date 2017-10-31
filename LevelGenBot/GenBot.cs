@@ -61,7 +61,11 @@ namespace LevelGenBot
 		public async Task Disconnect()
 		{
 			await restClient.LogoutAsync();
+
 			await socketClient.SetStatusAsync(UserStatus.Invisible);
+			// Wait, just to verify that the status update has time to go through.
+			await socketClient.GetDMChannelAsync(socketClient.CurrentUser.Id);
+
 			await socketClient.StopAsync();
 		}
 
@@ -83,7 +87,6 @@ namespace LevelGenBot
 
 			return client;
 		}
-
 
 		private async Task SocketClient_MessageReceived(SocketMessage msg)
 		{
