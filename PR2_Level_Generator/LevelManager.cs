@@ -108,14 +108,34 @@ namespace PR2_Level_Generator
 			JObject json = JObject.Parse(str);
 
 			Type t = Type.GetType(json["Generator Type"].ToString());
+			ILevelGenerator oldGen = generator;
 			generator = Activator.CreateInstance(t) as ILevelGenerator;
 
+			bool fail = false;
 			foreach (JProperty j in json["Generator Params"])
-				SetParamOrSetting(j.Name, j.Value.ToString());
+			{
+				if (!SetParamOrSetting(j.Name, j.Value.ToString()))
+				{
+					fail = true;
+					break;
+				}
+			}
 			foreach (JProperty j in json["Map Settings"])
-				SetParamOrSetting(j.Name, j.Value.ToString());
+			{
+				if (!SetParamOrSetting(j.Name, j.Value.ToString()))
+				{
+					fail = true;
+					break;
+				}
+			}
 
-			return generator;
+			if (fail)
+			{
+				generator = oldGen;
+				return null;
+			}
+			else
+				return generator;
 		}
 
 		public bool SetParamOrSetting(string name, string value)
