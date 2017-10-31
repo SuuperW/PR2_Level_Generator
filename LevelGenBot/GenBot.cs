@@ -302,17 +302,15 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string configName = args[1];
-
+			string filePath = GetConfigPath(msg.Author.Id, args[1]);
 			GenerationManager generationManager = new GenerationManager();
-			generationManager.username = pr2_username;
-			generationManager.login_token = pr2_token;
-
-			if (generationManager.LoadSettings(Path.Combine(configsPath, args[1])) == null)
+			if (generationManager.LoadSettings(filePath) == null)
 			{
 				await SendInvalidConfigMesage(msg, args[1]);
 				return false;
 			}
+			generationManager.username = pr2_username;
+			generationManager.login_token = pr2_token;
 
 			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I am generating and uploading your level...");
@@ -396,10 +394,9 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string configName = args[1];
-
+			string filePath = GetConfigPath(msg.Author.Id, args[1]);
 			GenerationManager generationManager = new GenerationManager();
-			if (generationManager.LoadSettings(Path.Combine(configsPath, args[1])) == null)
+			if (generationManager.LoadSettings(filePath) == null)
 			{
 				await SendInvalidConfigMesage(msg, args[1]);
 				return false;
@@ -414,13 +411,26 @@ namespace LevelGenBot
 			else
 			{
 				string tempFile = GetTempFileName() + ".txt";
-				File.Copy(Path.Combine(configsPath, args[1]), tempFile);
+				File.Copy(filePath, tempFile);
 				await msg.Channel.SendFileAsync(tempFile, msg.Author.Mention +
 				  ", here is the '" + args[1] + "' config file.");
 				File.Delete(tempFile);
 			}
 			return true;
 		}
+		private string GetConfigPath(ulong userID, string configName)
+		{
+			if (configName.StartsWith("me/"))
+				configName = userID + configName.Substring(2);
+
+			string filePath = Path.Combine(configsPath, configName);
+			// ensure the file we're getting is inside the configs directory
+			if (!new DirectoryInfo(filePath).FullName.StartsWith(new DirectoryInfo(configsPath).FullName))
+				return null;
+
+			return filePath;
+		}
+
 		private async Task<bool> SetConfigFile(SocketMessage msg, params string[] args)
 		{
 			string fileName = await FileNameFromAttachment(msg);
