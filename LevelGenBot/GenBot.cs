@@ -253,6 +253,7 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
 			everybodyBotCommands.Add("get_config", new BotCommand(GetConfigFile, 5));
 			everybodyBotCommands.Add("set_config", new BotCommand(SetConfigFile, 5));
+			everybodyBotCommands.Add("delete_config", new BotCommand(DeleteConfigFile));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
 			//trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
@@ -514,6 +515,28 @@ namespace LevelGenBot
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
 			  "`" + configName + "` is not a recognized config file or is corrupt.\n" +
 			  "To view a list of the available configs, use the command `config_list`.");
+		}
+
+		private async Task<bool> DeleteConfigFile(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await msg.Channel.SendMessageAsync("You didn't specify a config file to delete, silly " +
+				  msg.Author.Mention + "!");
+				return false;
+			}
+			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", you may only delete your own configs.");
+				return false;
+			}
+
+			string filePath = GetConfigPath(msg.Author.Id, args[1]);
+			if (File.Exists(filePath))
+				File.Delete(filePath);
+
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config '" + args[1] + "' has been deleted.");
+			return true;
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
