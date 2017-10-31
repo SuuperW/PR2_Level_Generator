@@ -268,7 +268,8 @@ namespace LevelGenBot
 				", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
-			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username + "]");
+			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username + 
+				"#" + msg.Author.Discriminator + "]");
 			generationManager.generator.GenerateMap();
 			string response = await generationManager.UploadLevel();
 
