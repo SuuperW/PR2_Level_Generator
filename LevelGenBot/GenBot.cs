@@ -187,7 +187,7 @@ namespace LevelGenBot
 
 				int quote = msg.IndexOf('"', index);
 				int space = index;
-				while (msg.Length > space && !char.IsWhiteSpace(msg[index]))
+				while (msg.Length > space && !char.IsWhiteSpace(msg[space]))
 					space++;
 
 				int newIndex = 0;
@@ -262,18 +262,6 @@ namespace LevelGenBot
 			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
-			return true;
-		}
-		private async Task<bool> SendSettingsListMessage(SocketMessage msg, params string[] args)
-		{
-			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
-			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```");
-			foreach (string file in filesList)
-				settingsList.Append(new FileInfo(file).Name + "\n");
-			settingsList.Append("```");
-
-			await msg.Author.SendMessageAsync(settingsList.ToString());
-			Console.WriteLine("Sent settings list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 			return true;
 		}
 		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
@@ -352,6 +340,18 @@ namespace LevelGenBot
 
 			await msg.Channel.SendMessageAsync("Removed " + count + " user(s) from trusted user list.");
 			return count != 0;
+		}
+		private async Task<bool> SendSettingsListMessage(SocketMessage msg, params string[] args)
+		{
+			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
+			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```\n");
+			foreach (string file in filesList)
+				settingsList.Append(new FileInfo(file).Name + "\n");
+			settingsList.Append("```");
+
+			await msg.Author.SendMessageAsync(settingsList.ToString());
+			Console.WriteLine("Sent settings list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			return true;
 		}
 
 		private async Task<bool> GetSettings(SocketMessage msg, params string[] args)
