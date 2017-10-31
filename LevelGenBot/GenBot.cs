@@ -107,61 +107,54 @@ namespace LevelGenBot
 						&& words.Length > 1);
 				}
 
-				BotCommand commandDelegate = null;
-				string command = null;
+				BotCommand command = null;
+				string commandStr = null;
 				string[] args = null;
 				if (!msgIsCommand)
 				{
 					if (msg.Channel is IDMChannel || msg.MentionedUsers.Contains(socketClient.CurrentUser))
-						commandDelegate = everybodyBotCommands["help"];
+						command = everybodyBotCommands["help"];
 				}
 				else
 				{
 					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
 					args = ParseCommand(msg.Content);
-					command = args[0].ToLower();
-					if (everybodyBotCommands.ContainsKey(command))
-						commandDelegate = everybodyBotCommands[command];
-					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(command))
-						commandDelegate = trustedBotCommands[command];
-					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(command))
-						commandDelegate = ownerBotCommands[command];
+					commandStr = args[0].ToLower();
+					if (everybodyBotCommands.ContainsKey(commandStr))
+						command = everybodyBotCommands[commandStr];
+					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(commandStr))
+						command = trustedBotCommands[commandStr];
+					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
+						command = ownerBotCommands[commandStr];
 					else
 					{
-						commandDelegate = everybodyBotCommands["help"];
-						command = "help";
+						command = everybodyBotCommands["help"];
+						commandStr = "help";
 					}
 				}
 
 				try
 				{
-					if (commandDelegate != null)
+					if (command != null)
 					{
 						bool tooFast = false;
-						if (commandHistory.TimeSinceLastCommand(msg.Author.Id) < 2)
+
+						if (commandHistory.TimeSinceLastUse(commandStr) < command.MinDelay)
 						{
-							if (command != "help")
-								await msg.Author.SendMessageAsync("Slow down, yo!");
+							await msg.Author.SendMessageAsync("I've been getting too many of those commands lately. Please try again later.");
 							tooFast = true;
 						}
-						else if (command == "generate")
+						else if (commandHistory.TimeSinceLastUse(commandStr, msg.Author.Id) < command.MinDelayPerUser)
 						{
-							if (commandHistory.TimeSinceLastUse(command) < 5)
-							{
-								await msg.Author.SendMessageAsync("I've been getting too many generate commands lately. Please try again later.");
-								tooFast = true;
-							}
-							else if (commandHistory.TimeSinceLastUse(command, msg.Author.Id) < 30)
-							{
-								await msg.Author.SendMessageAsync("You may only use that command once every 30 seconds.");
-								tooFast = true;
-							}
+							await msg.Author.SendMessageAsync("You may only use that command once every " +
+							  command.MinDelayPerUser + " seconds.");
+							tooFast = true;
 						}
-						
+
 						if (!tooFast)
 						{
-							await commandDelegate(msg, args);
-							commandHistory.AddCommand(command, msg.Author.Id);
+							if (await command.Delegate(msg, args))
+								commandHistory.AddCommand(commandStr, msg.Author.Id);
 						}
 					}
 				}
@@ -213,33 +206,27 @@ namespace LevelGenBot
 		}
 
 		#region "Bot Commands"
-		private delegate Task BotCommand(SocketMessage msg, params string[] args);
 		private SortedList<string, BotCommand> everybodyBotCommands;
 		private SortedList<string, BotCommand> trustedBotCommands;
 		private SortedList<string, BotCommand> ownerBotCommands;
 		private void InitializeBotCommandsList()
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
-			everybodyBotCommands.Add("help", SendHelpMessage);
-			everybodyBotCommands.Add("get_list", SendSettingsListMessage);
-			everybodyBotCommands.Add("generate", GenerateLevel);
-			everybodyBotCommands.Add("get_settings", GetSettings);
+			everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
+			everybodyBotCommands.Add("get_list", new BotCommand(SendSettingsListMessage));
+			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
+			everybodyBotCommands.Add("get_settings", new BotCommand(GetSettings, 5));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
-			trustedBotCommands.Add("set_settings", SetSettings);
+			trustedBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
 
 			ownerBotCommands = new SortedList<string, BotCommand>();
-			ownerBotCommands.Add("add_trusted_user", AddTrustedUser);
-			ownerBotCommands.Add("remove_trusted_user", RemoveTrustedUser);
-			ownerBotCommands.Add("gtfo", async (m, a) =>
-			{
-				await m.Channel.SendMessageAsync("I'm sorry you feel that way, " + m.Author.Mention +
-					". :(\nI guess I'll leave now. Bye guys!");
-				Disconnect();
-			});
+			ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
+			ownerBotCommands.Add("remove_trusted_user", new BotCommand(RemoveTrustedUser));
+			ownerBotCommands.Add("gtfo", new BotCommand(GTFO));
 		}
 
-		private async Task SendHelpMessage(SocketMessage msg, params string[] args)
+		private async Task<bool> SendHelpMessage(SocketMessage msg, params string[] args)
 		{
 			StringBuilder availableCommands = new StringBuilder();
 			foreach (KeyValuePair<string, BotCommand> kvp in everybodyBotCommands)
@@ -263,8 +250,9 @@ namespace LevelGenBot
 			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			return true;
 		}
-		private async Task SendSettingsListMessage(SocketMessage msg, params string[] args)
+		private async Task<bool> SendSettingsListMessage(SocketMessage msg, params string[] args)
 		{
 			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
 			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```");
@@ -274,13 +262,14 @@ namespace LevelGenBot
 
 			await msg.Author.SendMessageAsync(settingsList.ToString());
 			Console.WriteLine("Sent settings list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			return true;
 		}
-		private async Task GenerateLevel(SocketMessage msg, params string[] args)
+		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
 			{
 				await SendGenerateHelpMessage(msg);
-				return;
+				return false;
 			}
 
 			string settingsName = args[1];
@@ -293,14 +282,14 @@ namespace LevelGenBot
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
 				  "`" + args[1] + "` is not a recognized setting.");
-				return;
+				return false;
 			}
 
 			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
-			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username + 
+			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username +
 			  "#" + msg.Author.Discriminator + "]");
 			generationManager.generator.GenerateMap();
 			string response = await generationManager.UploadLevel();
@@ -309,10 +298,10 @@ namespace LevelGenBot
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
 			Console.WriteLine("Uploaded: " + response + " [requested by " +
-			  msg.Author.Username +  "#" + msg.Author.Discriminator + "]");
-
+			  msg.Author.Username + "#" + msg.Author.Discriminator + "]");
+			return true;
 		}
-		private async Task SendGenerateHelpMessage(SocketMessage msg)
+		private async Task<bool> SendGenerateHelpMessage(SocketMessage msg)
 		{
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", to generate a level, please use the following format:\n" +
@@ -320,9 +309,10 @@ namespace LevelGenBot
 			  "To see a list of available settings, say `@me getsettings`.");
 
 			Console.WriteLine("Sent generate help message to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			return true;
 		}
 
-		private async Task AddTrustedUser(SocketMessage msg, params string[] args)
+		private async Task<bool> AddTrustedUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
 			foreach (SocketUser user in msg.MentionedUsers)
@@ -335,8 +325,9 @@ namespace LevelGenBot
 			}
 
 			await msg.Channel.SendMessageAsync("Added " + count + " user(s) to trusted user list.");
+			return count != 0;
 		}
-		private async Task RemoveTrustedUser(SocketMessage msg, params string[] args)
+		private async Task<bool> RemoveTrustedUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
 			foreach (SocketUser user in msg.MentionedUsers)
@@ -349,15 +340,16 @@ namespace LevelGenBot
 			}
 
 			await msg.Channel.SendMessageAsync("Removed " + count + " user(s) from trusted user list.");
+			return count != 0;
 		}
 
-		private async Task GetSettings(SocketMessage msg, params string[] args)
+		private async Task<bool> GetSettings(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
 			{
 				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " +
 				  msg.Author.Mention + "!");
-				return;
+				return false;
 			}
 
 			string settingsName = args[1];
@@ -367,7 +359,7 @@ namespace LevelGenBot
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
 				  "`" + args[1] + "` is not a recognized setting or is corrupt.");
-				return;
+				return false;
 			}
 
 			if (args.Contains("text"))
@@ -381,13 +373,14 @@ namespace LevelGenBot
 				await msg.Channel.SendFileAsync(Path.Combine(settingsPath, args[1]), msg.Author.Mention +
 				  ", here are the settings for '" + args[1]);
 			}
+			return true;
 		}
-		private async Task SetSettings(SocketMessage msg, params string[] args)
+		private async Task<bool> SetSettings(SocketMessage msg, params string[] args)
 		{
 			if (msg.Attachments.Count != 1)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", please upload a file to use this command.");
-				return;
+				return false;
 			}
 
 			Attachment a = msg.Attachments.First();
@@ -410,7 +403,7 @@ namespace LevelGenBot
 			if (!valid)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
-				return;
+				return false;
 			}
 
 
@@ -419,6 +412,15 @@ namespace LevelGenBot
 			  a.Filename + "' have been saved.");
 
 			File.Delete(fileName);
+			return true;
+		}
+
+		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
+		{
+			await msg.Channel.SendMessageAsync("I'm sorry you feel that way, " + msg.Author.Mention +
+					". :(\nI guess I'll leave now. Bye guys!");
+			Disconnect();
+			return true;
 		}
 
 		#endregion
