@@ -221,27 +221,25 @@ namespace LevelGenBot
 					availableCommands.Append("\n" + kvp.Key);
 			}
 
-			await msg.Author.SendMessageAsync(msg.Author.Mention +
-				", to use this bot send a message with the format `@me command [command arguments]`.\n" +
-				"If a command or argument contains a space, surround it with quotation marks.\n" +
-				"Example: `@me \"long race\"`\n" +
-				"If you are sending the command via DMs, mentioning me is not required.\n" +
-				"List of available commands: ```" + availableCommands.ToString() + "```");
+			await msg.Author.SendMessageAsync("To use this bot send a message with the format " +
+			  "`@me command [command arguments]`.\n" +
+			  "If a command or argument contains a space, surround it with quotation marks.\n" +
+			  "Example: `@me \"long race\"`\n" +
+			  "If you are sending the command via DMs, mentioning me is not required.\n" +
+			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
-			Console.WriteLine("Sent help to " + msg.Author.Username + ".");
+			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 		}
 		private async Task SendSettingsListMessage(SocketMessage msg, params string[] args)
 		{
 			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
 			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```");
 			foreach (string file in filesList)
-			{
 				settingsList.Append(new FileInfo(file).Name + "\n");
-			}
 			settingsList.Append("```");
 
 			await msg.Author.SendMessageAsync(settingsList.ToString());
-			Console.WriteLine("Sent settings list to " + msg.Author.Username + ".");
+			Console.WriteLine("Sent settings list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 		}
 		private async Task GenerateLevel(SocketMessage msg, params string[] args)
 		{
@@ -260,33 +258,34 @@ namespace LevelGenBot
 			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-					"`" + args[1] + "` is not a recognized setting.");
+				  "`" + args[1] + "` is not a recognized setting.");
 				return;
 			}
 
 			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
-				", I am generating and uploading your level...");
+			  ", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
 			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username + 
-				"#" + msg.Author.Discriminator + "]");
+			  "#" + msg.Author.Discriminator + "]");
 			generationManager.generator.GenerateMap();
 			string response = await generationManager.UploadLevel();
 
 			generatingMessage.DeleteAsync();
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
-			Console.WriteLine("Uploaded: " + response);
+			Console.WriteLine("Uploaded: " + response + " [requested by " +
+			  msg.Author.Username +  "#" + msg.Author.Discriminator + "]");
 
 		}
 		private async Task SendGenerateHelpMessage(SocketMessage msg)
 		{
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
-				", to generate a level, please use the following format:\n" +
-				"```@me generate [name of settings to use]```\n" +
-				"To see a list of available settings, say `@me getsettings`.");
+			  ", to generate a level, please use the following format:\n" +
+			  "```@me generate [name of settings to use]```\n" +
+			  "To see a list of available settings, say `@me getsettings`.");
 
-			Console.WriteLine("Sent generate help message to " + msg.Author.Username + ".");
+			Console.WriteLine("Sent generate help message to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 		}
 
 		private async Task AddTrustedUser(SocketMessage msg, params string[] args)
@@ -323,7 +322,7 @@ namespace LevelGenBot
 			if (args.Length < 2)
 			{
 				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " +
-					msg.Author.Mention + "!");
+				  msg.Author.Mention + "!");
 				return;
 			}
 
@@ -333,7 +332,7 @@ namespace LevelGenBot
 			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-					"`" + args[1] + "` is not a recognized setting or is corrupt.");
+				  "`" + args[1] + "` is not a recognized setting or is corrupt.");
 				return;
 			}
 
@@ -341,12 +340,12 @@ namespace LevelGenBot
 			{
 				string str = generationManager.GetSaveObject().ToString();
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for '" +
-					args[1] + "'\n```" + str + "```");
+				  args[1] + "'\n```" + str + "```");
 			}
 			else
 			{
 				await msg.Channel.SendFileAsync(Path.Combine(settingsPath, args[1]), msg.Author.Mention +
-					", here are the settings for '" + args[1]);
+				  ", here are the settings for '" + args[1]);
 			}
 		}
 		private async Task SetSettings(SocketMessage msg, params string[] args)
@@ -383,7 +382,7 @@ namespace LevelGenBot
 
 			File.WriteAllText(Path.Combine(settingsPath, a.Filename), str);
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
-				a.Filename + "' have been saved.");
+			  a.Filename + "' have been saved.");
 
 			File.Delete(fileName);
 		}
