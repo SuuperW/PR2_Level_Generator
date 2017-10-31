@@ -328,13 +328,21 @@ namespace LevelGenBot
 			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-					"`" + args[1] + "` is not a recognized setting.");
+					"`" + args[1] + "` is not a recognized setting or is corrupt.");
 				return;
 			}
 
-			string str = generationManager.GetSaveObject().ToString();
-			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for '" +
-				args[1] + "'\n```" + str + "```");
+			if (args.Contains("text"))
+			{
+				string str = generationManager.GetSaveObject().ToString();
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for '" +
+					args[1] + "'\n```" + str + "```");
+			}
+			else
+			{
+				await msg.Channel.SendFileAsync(Path.Combine(settingsPath, args[1]), msg.Author.Mention +
+					", here are the settings for '" + args[1]);
+			}
 		}
 		private async Task SetSettings(SocketMessage msg, params string[] args)
 		{
