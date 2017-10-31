@@ -442,6 +442,14 @@ namespace LevelGenBot
 				return false;
 			}
 
+			if (!specialUsers.IsUserTrusted(msg.Author.Id) || !args.Contains("public"))
+			{
+				string dir = Path.Combine(Directory.GetParent(fileName).FullName, msg.Author.Id.ToString());
+				fileName = Path.Combine(dir, new FileInfo(fileName).Name);
+				if (!Directory.Exists(dir))
+					Directory.CreateDirectory(dir);
+			}
+
 			File.WriteAllText(fileName, str);
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
 			  msg.Attachments.First().Filename + "' have been saved.");
