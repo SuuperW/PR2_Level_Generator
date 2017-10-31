@@ -138,7 +138,6 @@ namespace LevelGenBot
 					if (command != null)
 					{
 						bool tooFast = false;
-
 						if (commandHistory.TimeSinceLastUse(commandStr) < command.MinDelay)
 						{
 							await msg.Author.SendMessageAsync("I've been getting too many of those commands lately. Please try again later.");
@@ -247,6 +246,8 @@ namespace LevelGenBot
 			  "If a command or argument contains a space, surround it with quotation marks.\n" +
 			  "Example: `@me \"long race\"`\n" +
 			  "If you are sending the command via DMs, mentioning me is not required.\n" +
+			  "When a level is generated, it will be saved under the PR2 username 'R Races'. " +
+			  "Most likely it will also be password-proteced with a blank password; to get in, just press 'Check' without typing in anything." +
 			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
