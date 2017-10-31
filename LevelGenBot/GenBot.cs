@@ -21,7 +21,7 @@ namespace LevelGenBot
 		string bot_token;
 		string pr2_username;
 		string pr2_token;
-		const string settingsPath = "GenSettings";
+		const string configsPath = "GenConfigs";
 
 		int tempFileID = -1;
 		private string GetTempFileName()
@@ -244,13 +244,13 @@ namespace LevelGenBot
 			everybodyBotCommands = new SortedList<string, BotCommand>();
 			everybodyBotCommands.Add("small_help", new BotCommand(SendSmallHelpMessage));
 			everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
-			everybodyBotCommands.Add("get_list", new BotCommand(SendSettingsListMessage));
+			everybodyBotCommands.Add("config_list", new BotCommand(SendConfigsListMessage));
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
-			everybodyBotCommands.Add("get_settings", new BotCommand(GetSettings, 5));
-			everybodyBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
+			everybodyBotCommands.Add("get_config", new BotCommand(GetConfigFile, 5));
+			everybodyBotCommands.Add("set_config", new BotCommand(SetConfigFile, 5));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
-			//trustedBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
+			//trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
 
 			ownerBotCommands = new SortedList<string, BotCommand>();
 			ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
@@ -302,15 +302,15 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string settingsName = args[1];
+			string configName = args[1];
 
 			GenerationManager generationManager = new GenerationManager();
 			generationManager.username = pr2_username;
 			generationManager.login_token = pr2_token;
 
-			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
+			if (generationManager.LoadSettings(Path.Combine(configsPath, args[1])) == null)
 			{
-				await SendInvalidSettingMesage(msg, args[1]);
+				await SendInvalidConfigMesage(msg, args[1]);
 				return false;
 			}
 
@@ -334,8 +334,8 @@ namespace LevelGenBot
 		{
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", to generate a level, please use the following format:\n" +
-			  "```@me generate [name of settings to use]```\n" +
-			  "To see a list of available settings, say `@me getsettings`.");
+			  "```@me generate [name of config to use]```\n" +
+			  "To see a list of available configs, say `@me config_list`.");
 
 			Console.WriteLine("Sent generate help message to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 			return true;
@@ -371,57 +371,57 @@ namespace LevelGenBot
 			await msg.Channel.SendMessageAsync("Removed " + count + " user(s) from trusted user list.");
 			return count != 0;
 		}
-		private async Task<bool> SendSettingsListMessage(SocketMessage msg, params string[] args)
+		private async Task<bool> SendConfigsListMessage(SocketMessage msg, params string[] args)
 		{
-			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.TopDirectoryOnly);
-			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```\n");
+			IEnumerable<string> filesList = Directory.EnumerateFiles(configsPath, "*", SearchOption.TopDirectoryOnly);
+			StringBuilder configsList = new StringBuilder("Here is a list of all available configs:\n```\n");
 			foreach (string file in filesList)
-				settingsList.Append(new FileInfo(file).Name + "\n");
-			filesList = Directory.EnumerateFiles(Path.Combine(settingsPath, msg.Author.Id.ToString()), "*", SearchOption.TopDirectoryOnly);
+				configsList.Append(new FileInfo(file).Name + "\n");
+			filesList = Directory.EnumerateFiles(Path.Combine(configsPath, msg.Author.Id.ToString()), "*", SearchOption.TopDirectoryOnly);
 			foreach (string file in filesList)
-				settingsList.Append("me/" + new FileInfo(file).Name + "\n");
-			settingsList.Append("```");
+				configsList.Append("me/" + new FileInfo(file).Name + "\n");
+			configsList.Append("```");
 
-			await msg.Author.SendMessageAsync(settingsList.ToString());
-			Console.WriteLine("Sent settings list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			await msg.Author.SendMessageAsync(configsList.ToString());
+			Console.WriteLine("Sent configs list to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
 			return true;
 		}
 
-		private async Task<bool> GetSettings(SocketMessage msg, params string[] args)
+		private async Task<bool> GetConfigFile(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
 			{
-				await msg.Channel.SendMessageAsync("You didn't specify a setting to get, silly " +
+				await msg.Channel.SendMessageAsync("You didn't specify a config file to get, silly " +
 				  msg.Author.Mention + "!");
 				return false;
 			}
 
-			string settingsName = args[1];
+			string configName = args[1];
 
 			GenerationManager generationManager = new GenerationManager();
-			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
+			if (generationManager.LoadSettings(Path.Combine(configsPath, args[1])) == null)
 			{
-				await SendInvalidSettingMesage(msg, args[1]);
+				await SendInvalidConfigMesage(msg, args[1]);
 				return false;
 			}
 
 			if (args.Contains("text"))
 			{
 				string str = generationManager.GetSaveObject().ToString();
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for '" +
-				  args[1] + "'\n```" + str + "```");
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for config '" +
+				  args[1] + "'.\n```" + str + "```");
 			}
 			else
 			{
 				string tempFile = GetTempFileName() + ".txt";
-				File.Copy(Path.Combine(settingsPath, args[1]), tempFile);
+				File.Copy(Path.Combine(configsPath, args[1]), tempFile);
 				await msg.Channel.SendFileAsync(tempFile, msg.Author.Mention +
-				  ", here are the settings for '" + args[1]);
+				  ", here is the '" + args[1] + "' config file.");
 				File.Delete(tempFile);
 			}
 			return true;
 		}
-		private async Task<bool> SetSettings(SocketMessage msg, params string[] args)
+		private async Task<bool> SetConfigFile(SocketMessage msg, params string[] args)
 		{
 			string fileName = await FileNameFromAttachment(msg);
 			if (fileName == null)
@@ -431,7 +431,7 @@ namespace LevelGenBot
 			ILevelGenerator gen = GeneratorFromSettings(str);
 			if (gen == null)
 			{
-				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
+				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is invalid.");
 				return false;
 			}
 
@@ -451,8 +451,8 @@ namespace LevelGenBot
 			}
 
 			File.WriteAllText(fileName, str);
-			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
-			  msg.Attachments.First().Filename + "' have been saved.");
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", config file '" +
+			  msg.Attachments.First().Filename + "' has been saved.");
 
 			return true;
 		}
@@ -494,11 +494,11 @@ namespace LevelGenBot
 			gen.Map.SetSetting("credits", userID.ToString());
 			return null;
 		}
-		private async Task SendInvalidSettingMesage(SocketMessage msg, string settingName)
+		private async Task SendInvalidConfigMesage(SocketMessage msg, string configName)
 		{
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-			  "`" + settingName + "` is not a recognized setting or is corrupt.\n" +
-			  "To view a list of the available settings, use the command `get_list`.");
+			  "`" + configName + "` is not a recognized config file or is corrupt.\n" +
+			  "To view a list of the available configs, use the command `config_list`.");
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
@@ -526,10 +526,10 @@ namespace LevelGenBot
 			}
 
 			Attachment a = msg.Attachments.First();
-			string fileName = Path.Combine(settingsPath, a.Filename);
+			string fileName = Path.Combine(configsPath, a.Filename);
 			if (fileName.EndsWith(".txt"))
 				fileName = fileName.Substring(0, fileName.Length - 4);
-			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(settingsPath).FullName)
+			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(configsPath).FullName)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", there seems to be something wonky with your file name.");
 				return null;
