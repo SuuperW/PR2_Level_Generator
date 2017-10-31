@@ -151,6 +151,7 @@ namespace LevelGenBot
 				channel.SendFileAsync(fileName, "I encountered an error. Here are the details.");
 			}
 		}
+
 		private BotCommand MessageToCommand(SocketMessage msg, out string[] args)
 		{
 			BotCommand command = null;
@@ -169,11 +170,11 @@ namespace LevelGenBot
 				else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
 					command = ownerBotCommands[commandStr];
 				else
-					command = everybodyBotCommands["help"];
+					command = everybodyBotCommands["small_help"];
 			}
 			// If the bot is mentioned, send a help message.
 			else if (msg.MentionedUsers.FirstOrDefault((u) => u.Id == socketClient.CurrentUser.Id) != null)
-				command = everybodyBotCommands["help"];
+				command = everybodyBotCommands["small_help"];
 
 			return command;
 		}
@@ -240,6 +241,7 @@ namespace LevelGenBot
 		private void InitializeBotCommandsList()
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
+			everybodyBotCommands.Add("small_help", new BotCommand(SendSmallHelpMessage));
 			everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
 			everybodyBotCommands.Add("get_list", new BotCommand(SendSettingsListMessage));
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
@@ -275,13 +277,19 @@ namespace LevelGenBot
 			await msg.Author.SendMessageAsync("To use this bot send a message with the format " +
 			  "`@me command [command arguments]` where `@me` is replaced with a mention of this bot.\n" +
 			  "If a command or argument contains a space, surround it with quotation marks.\n\n" +
-			  "Example command: `@me generate \"long race\"`\n\n" +
+			  "Example command: `@me generate \"easy race\"`\n\n" +
 			  "If you are sending the command via DMs, mentioning me is _not required_.\n" +
 			  "When a level is generated, it will be saved under the PR2 username 'R Races'. " +
 			  "Most likely it will also be password-proteced with a blank password; to get in, just press 'Check' without typing in anything.\n\n" +
 			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
+			return true;
+		}
+		private async Task<bool> SendSmallHelpMessage(SocketMessage msg, params string[] args)
+		{
+			await msg.Author.SendMessageAsync("Command format: `@me command [args]`\n" +
+			  "For details on how to use this bot, say `help`.");
 			return true;
 		}
 		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
