@@ -23,7 +23,12 @@ namespace LevelGenBot
 		string pr2_token;
 		const string settingsPath = "GenSettings";
 
-		int tempFileID = 0;
+		int tempFileID = -1;
+		private string GetTempFileName()
+		{
+			tempFileID++;
+			return "temp" + tempFileID;
+		}
 
 		DiscordRestClient restClient;
 		DiscordSocketClient socketClient;
@@ -122,16 +127,28 @@ namespace LevelGenBot
 						commandHistory.AddCommand(command.Name, msg.Author.Id);
 				}
 			}
+			catch (Discord.Net.HttpException ex)
+			{
+				if (ex.Message.Contains("50007")) // can't send messages to this user
+				{
+					if (!msg.Author.IsBot)
+					{
+						await msg.Channel.SendMessageAsync(msg.Author.Mention + ", I attempted to send you a DM " +
+						  "but was unable to. Please ensure that you can receive DMs from me.");
+					}
+				}
+			}
 			catch (Exception ex)
 			{
 				//System.Diagnostics.Debugger.Break();
 				await msg.Channel.SendMessageAsync(msg.Author.Mention +
-					", I have encountered an error and don't know what to do with it. :(" +
+					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
-				await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("Error!  " +
-					"`" + ex.Message + "`\n```" + ex.StackTrace + "```");
-
-				throw ex;
+				string fileName = GetTempFileName() + ".txt";
+				File.WriteAllText(fileName, "Error: " + ex.GetType().ToString() + "\n\n" +
+				  ex.Message + "\n\n" + ex.StackTrace);
+				IDMChannel channel = await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync();
+				channel.SendFileAsync(fileName, "I encountered an error. Here are the details.");
 			}
 		}
 		private BotCommand MessageToCommand(SocketMessage msg, out string[] args)
@@ -402,8 +419,7 @@ namespace LevelGenBot
 			StreamReader streamReader = new StreamReader(response.GetResponseStream());
 			string str = await streamReader.ReadToEndAsync();
 
-			string fileName = "temp" + tempFileID;
-			tempFileID++;
+			string fileName = GetTempFileName();
 			File.WriteAllText(fileName, str);
 
 			GenerationManager generationManager = new GenerationManager();
