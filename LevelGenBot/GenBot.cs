@@ -420,6 +420,7 @@ namespace LevelGenBot
 		}
 		private string GetConfigPath(ulong userID, string configName)
 		{
+			configName = configName.Replace("../", ""); // Security
 			if (configName.StartsWith("me/"))
 				configName = userID + configName.Substring(2);
 
@@ -536,7 +537,7 @@ namespace LevelGenBot
 			}
 
 			Attachment a = msg.Attachments.First();
-			string fileName = Path.Combine(configsPath, a.Filename);
+			string fileName = Path.Combine(configsPath, a.Filename.Replace("../", "")); // .Replace for security
 			if (fileName.EndsWith(".txt"))
 				fileName = fileName.Substring(0, fileName.Length - 4);
 			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(configsPath).FullName)
