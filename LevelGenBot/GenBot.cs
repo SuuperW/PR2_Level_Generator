@@ -247,9 +247,10 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("get_list", new BotCommand(SendSettingsListMessage));
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
 			everybodyBotCommands.Add("get_settings", new BotCommand(GetSettings, 5));
+			everybodyBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
-			trustedBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
+			//trustedBotCommands.Add("set_settings", new BotCommand(SetSettings, 5));
 
 			ownerBotCommands = new SortedList<string, BotCommand>();
 			ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
@@ -426,18 +427,27 @@ namespace LevelGenBot
 			}
 
 			Attachment a = msg.Attachments.First();
+			string fileName = Path.Combine(settingsPath, a.Filename);
+			if (fileName.EndsWith(".txt"))
+				fileName = fileName.Substring(0, fileName.Length - 4);
+			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(settingsPath).FullName)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", there seems to be something wonky with your file name.");
+				return false;
+			}
+
 			HttpWebRequest request = HttpWebRequest.CreateHttp(a.Url);
 			WebResponse response = await request.GetResponseAsync();
 			StreamReader streamReader = new StreamReader(response.GetResponseStream());
 			string str = await streamReader.ReadToEndAsync();
 
-			string fileName = GetTempFileName();
-			File.WriteAllText(fileName, str);
+			string tempFileName = GetTempFileName();
+			File.WriteAllText(tempFileName, str);
 
 			GenerationManager generationManager = new GenerationManager();
 			bool valid = false;
 			try
-			{ valid = generationManager.LoadSettings(fileName) != null; }
+			{ valid = generationManager.LoadSettings(tempFileName) != null; }
 			catch (Newtonsoft.Json.JsonReaderException ex)
 			{ valid = false; }
 
@@ -447,12 +457,11 @@ namespace LevelGenBot
 				return false;
 			}
 
-
-			File.WriteAllText(Path.Combine(settingsPath, a.Filename), str);
+			File.WriteAllText(fileName, str);
 			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
 			  a.Filename + "' have been saved.");
 
-			File.Delete(fileName);
+			File.Delete(tempFileName);
 			return true;
 		}
 		private async Task SendInvalidSettingMesage(SocketMessage msg, string settingName)
