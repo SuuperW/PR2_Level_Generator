@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
+
+using Discord;
+using Discord.WebSocket;
 
 namespace LevelGenBot
 {
-    class CommandHistory
-    {
+	class CommandHistory
+	{
 		const double ticksPerSecond = 10000000;
 
 		private SortedList<ulong, SortedDictionary<string, long>> history = new SortedList<ulong, SortedDictionary<string, long>>();
@@ -20,13 +23,13 @@ namespace LevelGenBot
 			history[userID][command] = commandHistory[command] = userHistory[userID] = DateTime.Now.Ticks;
 		}
 
-		public double TimeSinceLastUse(string command)
+		private double TimeSinceLastUse(string command)
 		{
 			if (!commandHistory.ContainsKey(command))
 				return double.PositiveInfinity;
 			return (DateTime.Now.Ticks - commandHistory[command]) / ticksPerSecond;
 		}
-		public double TimeSinceLastUse(string command, ulong userID)
+		private double TimeSinceLastUse(string command, ulong userID)
 		{
 			if (!history.ContainsKey(userID) || !history[userID].ContainsKey(command))
 				return double.PositiveInfinity;
@@ -38,5 +41,27 @@ namespace LevelGenBot
 				return double.PositiveInfinity;
 			return (DateTime.Now.Ticks - userHistory[userID]) / ticksPerSecond;
 		}
-    }
+
+		/// <summary>
+		/// Determines if the given command can be executed or not. If it can, it returns the command. If not, it returns a command which tells the user to wait.
+		/// </summary>
+		public BotCommand CommandOrWait(BotCommand command, ulong userID)
+		{
+			string message = null;
+			if (TimeSinceLastUse(command.Name) < command.MinDelay)
+				message = "I've been getting too many of those commands lately. Please try again later.";
+			else if (TimeSinceLastUse(command.Name, userID) < command.MinDelayPerUser)
+				message = "You may only use that command once every " + command.MinDelayPerUser + " seconds.";
+
+			if (message == null)
+				return command;
+			else
+			{
+				return new BotCommand(async (msg, args) => {
+					await msg.Author.SendMessageAsync(message);
+					return true;
+				});
+			}
+		}
+	}
 }

@@ -89,7 +89,8 @@ namespace LevelGenBot
 		{
 			try
 			{
-				await HandleMessage(msg);
+				if (msg.Author.Id != BotID)
+					await HandleMessage(msg);
 			}
 			catch (Exception ex)
 			{
@@ -99,90 +100,78 @@ namespace LevelGenBot
 			}
 		}
 		private async Task HandleMessage(SocketMessage msg)
-		{ 
-			if (msg.Author.Id != BotID)
+		{
+			if (specialUsers.IsUserBanned(msg.Author.Id))
 			{
-				if (specialUsers.IsUserBanned(msg.Author.Id))
-				{
-					if (commandHistory.TimeSinceLastUse(bannedCommand.Name, msg.Author.Id) < 30)
-						await bannedCommand.Delegate(msg, null);
-					return;
-				}
+				if (commandHistory.TimeSinceLastCommand(msg.Author.Id) < 30)
+					await bannedCommand.Delegate(msg, null);
+				return;
+			}
 
-				// Ensure command is in proper format (@bot args)
-				bool msgIsCommand = false;
-				if (msg.Channel is IDMChannel)
-					msgIsCommand = true;
-				else
+			try
+			{
+				BotCommand command = MessageToCommand(msg, out string[] args);
+				if (command != null)
 				{
-					string[] words = msg.Content.Split(' ');
-					MentionUtils.TryParseUser(words[0], out ulong mentionedID);
-					msgIsCommand = (mentionedID == MentionUtils.ParseUser(socketClient.CurrentUser.Mention)
-						&& words.Length > 1);
-				}
+					command = commandHistory.CommandOrWait(command, msg.Author.Id);
 
-				BotCommand command = null;
-				string[] args = null;
-				if (!msgIsCommand)
-				{
-					if (msg.Channel is IDMChannel || msg.MentionedUsers.FirstOrDefault(
-					  (u) => u.Id == socketClient.CurrentUser.Id) != null)
-					{
-						command = everybodyBotCommands["help"];
-					}
-				}
-				else
-				{
-					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
-					args = ParseCommand(msg.Content);
-					string commandStr = args[0].ToLower();
-					if (everybodyBotCommands.ContainsKey(commandStr))
-						command = everybodyBotCommands[commandStr];
-					else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(commandStr))
-						command = trustedBotCommands[commandStr];
-					else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
-						command = ownerBotCommands[commandStr];
-					else
-						command = everybodyBotCommands["help"];
-				}
-
-				try
-				{
-					if (command != null)
-					{
-						bool tooFast = false;
-						string commandName = command.Name;
-						if (commandHistory.TimeSinceLastUse(commandName) < command.MinDelay)
-						{
-							await msg.Author.SendMessageAsync("I've been getting too many of those commands lately. Please try again later.");
-							tooFast = true;
-						}
-						else if (commandHistory.TimeSinceLastUse(commandName, msg.Author.Id) < command.MinDelayPerUser)
-						{
-							await msg.Author.SendMessageAsync("You may only use that command once every " +
-							  command.MinDelayPerUser + " seconds.");
-							tooFast = true;
-						}
-
-						if (!tooFast)
-						{
-							if (await command.Delegate(msg, args))
-								commandHistory.AddCommand(commandName, msg.Author.Id);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					//System.Diagnostics.Debugger.Break();
-					await msg.Channel.SendMessageAsync(msg.Author.Mention +
-						", I have encountered an error and don't know what to do with it. :(" +
-						"Error details have been sent to my owner.");
-					await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("Error!  " +
-						"`" + ex.Message + "`\n```" + ex.StackTrace + "```");
-
-					throw ex;
+					if (await command.Delegate(msg, args))
+						commandHistory.AddCommand(command.Name, msg.Author.Id);
 				}
 			}
+			catch (Exception ex)
+			{
+				//System.Diagnostics.Debugger.Break();
+				await msg.Channel.SendMessageAsync(msg.Author.Mention +
+					", I have encountered an error and don't know what to do with it. :(" +
+					"Error details have been sent to my owner.");
+				await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("Error!  " +
+					"`" + ex.Message + "`\n```" + ex.StackTrace + "```");
+
+				throw ex;
+			}
+		}
+		private BotCommand MessageToCommand(SocketMessage msg, out string[] args)
+		{
+			BotCommand command = null;
+			args = null;
+
+			if (IsMessageProperCommand(msg))
+			{
+				Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
+				args = ParseCommand(msg.Content);
+				string commandStr = args[0].ToLower();
+
+				if (everybodyBotCommands.ContainsKey(commandStr))
+					command = everybodyBotCommands[commandStr];
+				else if (specialUsers.IsUserTrusted(msg.Author.Id) && trustedBotCommands.ContainsKey(commandStr))
+					command = trustedBotCommands[commandStr];
+				else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
+					command = ownerBotCommands[commandStr];
+				else
+					command = everybodyBotCommands["help"];
+			}
+			// If the bot is mentioned, send a help message.
+			else if (msg.MentionedUsers.FirstOrDefault((u) => u.Id == socketClient.CurrentUser.Id) != null)
+				command = everybodyBotCommands["help"];
+
+			return command;
+		}
+		private bool IsMessageProperCommand(SocketMessage msg)
+		{
+			bool msgIsCommand = false;
+			if (msg.Channel is IDMChannel)
+				msgIsCommand = true;
+			else
+			{
+				// Is format @me command
+				string[] words = msg.Content.Split(' ');
+				MentionUtils.TryParseUser(words[0], out ulong mentionedID);
+				msgIsCommand = (mentionedID == MentionUtils.ParseUser(socketClient.CurrentUser.Mention)
+					&& words.Length > 1);
+			}
+
+			return msgIsCommand;
 		}
 		private string[] ParseCommand(string msg)
 		{
@@ -197,7 +186,10 @@ namespace LevelGenBot
 					index++;
 
 				int quote = msg.IndexOf('"', index);
-				int space = msg.IndexOf(' ', index);
+				int space = index;
+				while (msg.Length > space && !char.IsWhiteSpace(msg[index]))
+					space++;
+
 				int newIndex = 0;
 				if (quote != -1 && (quote < space || space == -1))
 				{
@@ -434,9 +426,9 @@ namespace LevelGenBot
 		}
 		private async Task SendInvalidSettingMesage(SocketMessage msg, string settingName)
 		{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-				  "`" + settingName + "` is not a recognized setting or is corrupt.\n" +
-				  "To view a list of the available settings, use the command `get_list`.");
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
+			  "`" + settingName + "` is not a recognized setting or is corrupt.\n" +
+			  "To view a list of the available settings, use the command `get_list`.");
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
