@@ -171,11 +171,11 @@ namespace LevelGenBot
 
 			do
 			{
-				while (msg.Length < index && char.IsWhiteSpace(msg[index]))
+				while (msg.Length > index && char.IsWhiteSpace(msg[index]))
 					index++;
 
-				int quote = msg.IndexOf('"', index + 1);
-				int space = msg.IndexOf(' ', index + 1);
+				int quote = msg.IndexOf('"', index);
+				int space = msg.IndexOf(' ', index);
 				int newIndex = 0;
 				if (quote != -1 && (quote < space || space == -1))
 				{
@@ -236,12 +236,12 @@ namespace LevelGenBot
 			}
 
 			await msg.Author.SendMessageAsync("To use this bot send a message with the format " +
-			  "`@me command [command arguments]`.\n" +
-			  "If a command or argument contains a space, surround it with quotation marks.\n" +
-			  "Example: `@me \"long race\"`\n" +
-			  "If you are sending the command via DMs, mentioning me is not required.\n" +
+			  "`@me command [command arguments]` where `@me` is replaced with a mention of this bot.\n" +
+			  "If a command or argument contains a space, surround it with quotation marks.\n\n" +
+			  "Example command: `@me generate \"long race\"`\n\n" +
+			  "If you are sending the command via DMs, mentioning me is _not required_.\n" +
 			  "When a level is generated, it will be saved under the PR2 username 'R Races'. " +
-			  "Most likely it will also be password-proteced with a blank password; to get in, just press 'Check' without typing in anything." +
+			  "Most likely it will also be password-proteced with a blank password; to get in, just press 'Check' without typing in anything.\n\n" +
 			  "List of available commands: ```" + availableCommands.ToString() + "```");
 
 			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
@@ -275,8 +275,7 @@ namespace LevelGenBot
 
 			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-				  "`" + args[1] + "` is not a recognized setting.");
+				await SendInvalidSettingMesage(msg, args[1]);
 				return false;
 			}
 
@@ -352,8 +351,7 @@ namespace LevelGenBot
 			GenerationManager generationManager = new GenerationManager();
 			if (generationManager.LoadSettings(Path.Combine(settingsPath, args[1])) == null)
 			{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
-				  "`" + args[1] + "` is not a recognized setting or is corrupt.");
+				await SendInvalidSettingMesage(msg, args[1]);
 				return false;
 			}
 
@@ -408,6 +406,12 @@ namespace LevelGenBot
 
 			File.Delete(fileName);
 			return true;
+		}
+		private async Task SendInvalidSettingMesage(SocketMessage msg, string settingName)
+		{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", " +
+				  "`" + settingName + "` is not a recognized setting or is corrupt.\n" +
+				  "To view a list of the available settings, use the command `get_list`.");
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
