@@ -121,6 +121,7 @@ namespace LevelGenBot
 				BotCommand command = MessageToCommand(msg, out string[] args);
 				if (command != null)
 				{
+					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
 					command = commandHistory.CommandOrWait(command, msg.Author.Id);
 
 					if (await command.Delegate(msg, args))
@@ -149,6 +150,7 @@ namespace LevelGenBot
 				  ex.Message + "\n\n" + ex.StackTrace);
 				IDMChannel channel = await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync();
 				channel.SendFileAsync(fileName, "I encountered an error. Here are the details.");
+				File.Delete(fileName);
 			}
 		}
 
@@ -159,7 +161,6 @@ namespace LevelGenBot
 
 			if (IsMessageProperCommand(msg))
 			{
-				Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
 				args = ParseCommand(msg.Content);
 				string commandStr = args[0].ToLower();
 
@@ -408,8 +409,11 @@ namespace LevelGenBot
 			}
 			else
 			{
-				await msg.Channel.SendFileAsync(Path.Combine(settingsPath, args[1]), msg.Author.Mention +
+				string tempFile = GetTempFileName() + ".txt";
+				File.Copy(Path.Combine(settingsPath, args[1]), tempFile);
+				await msg.Channel.SendFileAsync(tempFile, msg.Author.Mention +
 				  ", here are the settings for '" + args[1]);
+				File.Delete(tempFile);
 			}
 			return true;
 		}
