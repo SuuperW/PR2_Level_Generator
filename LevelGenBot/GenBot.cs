@@ -89,6 +89,13 @@ namespace LevelGenBot
 		{
 			if (msg.Author.Id != BotID)
 			{
+				if (specialUsers.IsUserBanned(msg.Author.Id))
+				{
+					if (commandHistory.TimeSinceLastUse(bannedCommand.Name, msg.Author.Id) < 30)
+						await bannedCommand.Delegate(msg, null);
+					return;
+				}
+
 				// Ensure command is in proper format (@bot args)
 				bool msgIsCommand = false;
 				if (msg.Channel is IDMChannel)
@@ -164,7 +171,7 @@ namespace LevelGenBot
 		}
 		private string[] ParseCommand(string msg)
 		{
-			int index = -1;
+			int index = 0;
 			if (msg.IndexOf('<') == 0) // If this command was initated with a mention at the front of it.
 				index = msg.IndexOf('>') + 1;
 			List<string> list = new List<string>();
@@ -202,6 +209,7 @@ namespace LevelGenBot
 		private SortedList<string, BotCommand> everybodyBotCommands;
 		private SortedList<string, BotCommand> trustedBotCommands;
 		private SortedList<string, BotCommand> ownerBotCommands;
+		private BotCommand bannedCommand;
 		private void InitializeBotCommandsList()
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
@@ -217,6 +225,8 @@ namespace LevelGenBot
 			ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
 			ownerBotCommands.Add("remove_trusted_user", new BotCommand(RemoveTrustedUser));
 			ownerBotCommands.Add("gtfo", new BotCommand(GTFO));
+
+			bannedCommand = new BotCommand(SendBannedMessage);
 		}
 
 		private async Task<bool> SendHelpMessage(SocketMessage msg, params string[] args)
@@ -419,6 +429,12 @@ namespace LevelGenBot
 			await msg.Channel.SendMessageAsync("I'm sorry you feel that way, " + msg.Author.Mention +
 					". :(\nI guess I'll leave now. Bye guys!");
 			Disconnect();
+			return true;
+		}
+
+		private async Task<bool> SendBannedMessage(SocketMessage msg, params string[] args)
+		{
+			await msg.Author.SendMessageAsync("You have been banned from this bot.");
 			return true;
 		}
 
