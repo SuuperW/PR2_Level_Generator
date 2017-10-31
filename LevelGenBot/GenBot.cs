@@ -415,11 +415,10 @@ namespace LevelGenBot
 			}
 			else
 			{
-				string tempFile = GetTempFileName() + ".txt";
-				File.Copy(filePath, tempFile);
-				await msg.Channel.SendFileAsync(tempFile, msg.Author.Mention +
+				FileStream stream = new FileStream(filePath, FileMode.Open);
+				string uploadFileName = Path.GetFileNameWithoutExtension(filePath) + ".txt";
+				await msg.Channel.SendFileAsync(stream, uploadFileName, msg.Author.Mention +
 				  ", here is the '" + args[1] + "' config file.");
-				File.Delete(tempFile);
 			}
 			return true;
 		}
