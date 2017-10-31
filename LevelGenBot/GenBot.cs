@@ -436,7 +436,7 @@ namespace LevelGenBot
 			}
 
 			string rejectedReason = VerifySettings(gen, fileName, msg.Author.Id);
-			if (rejectedReason != "")
+			if (rejectedReason != null)
 			{
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + " - " + rejectedReason);
 				return false;
