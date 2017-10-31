@@ -87,6 +87,19 @@ namespace LevelGenBot
 
 		private async Task SocketClient_MessageReceived(SocketMessage msg)
 		{
+			try
+			{
+				await HandleMessage(msg);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("\nError:\n");
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.StackTrace);
+			}
+		}
+		private async Task HandleMessage(SocketMessage msg)
+		{ 
 			if (msg.Author.Id != BotID)
 			{
 				if (specialUsers.IsUserBanned(msg.Author.Id))
@@ -166,6 +179,8 @@ namespace LevelGenBot
 						"Error details have been sent to my owner.");
 					await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("Error!  " +
 						"`" + ex.Message + "`\n```" + ex.StackTrace + "```");
+
+					throw ex;
 				}
 			}
 		}
