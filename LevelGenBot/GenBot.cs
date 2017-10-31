@@ -267,6 +267,8 @@ namespace LevelGenBot
 			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
 				", I am generating and uploading your level...");
 
+			MapLE map = generationManager.generator.Map;
+			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username + "]");
 			generationManager.generator.GenerateMap();
 			string response = await generationManager.UploadLevel();
 
