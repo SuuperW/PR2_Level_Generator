@@ -106,6 +106,11 @@ namespace PR2_Level_Generator
 
 			string str = File.ReadAllText(path);
 			JObject json = JObject.Parse(str);
+			// Fail if the json contents don't exactly match what is expected.
+			if (json.Count != 3)
+				return null;
+			if (json["Generator Type"] == null || json["Generator Params"] == null || json["Map Settings"] == null)
+				return null;
 
 			Type t = Type.GetType(json["Generator Type"].ToString());
 			ILevelGenerator oldGen = generator;
