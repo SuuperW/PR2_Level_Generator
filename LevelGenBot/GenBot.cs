@@ -373,10 +373,13 @@ namespace LevelGenBot
 		}
 		private async Task<bool> SendSettingsListMessage(SocketMessage msg, params string[] args)
 		{
-			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.AllDirectories);
+			IEnumerable<string> filesList = Directory.EnumerateFiles(settingsPath, "*", SearchOption.TopDirectoryOnly);
 			StringBuilder settingsList = new StringBuilder("Here is a list of all available settings:\n```\n");
 			foreach (string file in filesList)
 				settingsList.Append(new FileInfo(file).Name + "\n");
+			filesList = Directory.EnumerateFiles(Path.Combine(settingsPath, msg.Author.Id.ToString()), "*", SearchOption.TopDirectoryOnly);
+			foreach (string file in filesList)
+				settingsList.Append("me/" + new FileInfo(file).Name + "\n");
 			settingsList.Append("```");
 
 			await msg.Author.SendMessageAsync(settingsList.ToString());
@@ -420,29 +423,35 @@ namespace LevelGenBot
 		}
 		private async Task<bool> SetSettings(SocketMessage msg, params string[] args)
 		{
-			if (msg.Attachments.Count != 1)
+			string fileName = await FileNameFromAttachment(msg);
+			if (fileName == null)
+				return false;
+
+			string str = await GetAttachmentString(msg.Attachments.First());
+			ILevelGenerator gen = GeneratorFromSettings(str);
+			if (gen == null)
 			{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", please upload a file to use this command.");
+				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
 				return false;
 			}
 
-			Attachment a = msg.Attachments.First();
-			string fileName = Path.Combine(settingsPath, a.Filename);
-			if (fileName.EndsWith(".txt"))
-				fileName = fileName.Substring(0, fileName.Length - 4);
-			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(settingsPath).FullName)
+			string rejectedReason = VerifySettings(gen, fileName, msg.Author.Id);
+			if (rejectedReason != "")
 			{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", there seems to be something wonky with your file name.");
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + " - " + rejectedReason);
 				return false;
 			}
 
-			HttpWebRequest request = HttpWebRequest.CreateHttp(a.Url);
-			WebResponse response = await request.GetResponseAsync();
-			StreamReader streamReader = new StreamReader(response.GetResponseStream());
-			string str = await streamReader.ReadToEndAsync();
+			File.WriteAllText(fileName, str);
+			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
+			  msg.Attachments.First().Filename + "' have been saved.");
 
+			return true;
+		}
+		private ILevelGenerator GeneratorFromSettings(string settings)
+		{
 			string tempFileName = GetTempFileName();
-			File.WriteAllText(tempFileName, str);
+			File.WriteAllText(tempFileName, settings);
 
 			GenerationManager generationManager = new GenerationManager();
 			bool valid = false;
@@ -451,18 +460,31 @@ namespace LevelGenBot
 			catch (Newtonsoft.Json.JsonReaderException ex)
 			{ valid = false; }
 
-			if (!valid)
+			File.Delete(tempFileName);
+
+			if (valid)
+				return generationManager.generator;
+			else
+				return null;
+		}
+		private string VerifySettings(ILevelGenerator gen, string fileName, ulong userID)
+		{
+			if (userID == specialUsers.Owner)
+				return null;
+
+			if (!specialUsers.IsUserTrusted(userID))
 			{
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the settings file you provided is invalid.");
-				return false;
+				if (gen.Map.GetSetting("live") != "0" || gen.Map.GetSetting("hasPass") != "1")
+					return "Your level must be unpublished and have a password.";
+
+
 			}
 
-			File.WriteAllText(fileName, str);
-			await msg.Channel.SendMessageAsync(msg.Author.Mention + ", settings '" +
-			  a.Filename + "' have been saved.");
+			if (gen.Map.GetSetting("title") != fileName)
+				return "Your level's title must match the file name.";
 
-			File.Delete(tempFileName);
-			return true;
+			gen.Map.SetSetting("credits", userID.ToString());
+			return null;
 		}
 		private async Task SendInvalidSettingMesage(SocketMessage msg, string settingName)
 		{
@@ -486,6 +508,39 @@ namespace LevelGenBot
 		}
 
 		#endregion
+
+		private async Task<string> FileNameFromAttachment(SocketMessage msg)
+		{
+			if (msg.Attachments.Count != 1)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", please upload a file to use this command.");
+				return null;
+			}
+
+			Attachment a = msg.Attachments.First();
+			string fileName = Path.Combine(settingsPath, a.Filename);
+			if (fileName.EndsWith(".txt"))
+				fileName = fileName.Substring(0, fileName.Length - 4);
+			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(settingsPath).FullName)
+			{
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", there seems to be something wonky with your file name.");
+				return null;
+			}
+			else
+				return fileName;
+		}
+		private async Task<string> GetAttachmentString(Attachment attachment)
+		{
+			HttpWebRequest request = HttpWebRequest.CreateHttp(attachment.Url);
+			WebResponse response = await request.GetResponseAsync();
+			StreamReader streamReader = new StreamReader(response.GetResponseStream());
+			string ret = await streamReader.ReadToEndAsync();
+
+			streamReader.Close();
+			response.Close();
+
+			return ret;
+		}
 
 	}
 }
