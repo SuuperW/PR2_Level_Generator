@@ -330,7 +330,15 @@ namespace LevelGenBot
 			MapLE map = generationManager.generator.Map;
 			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username +
 			  "#" + msg.Author.Discriminator + "]");
-			generationManager.generator.GenerateMap();
+			bool success = generationManager.generator.GenerateMap(new System.Threading.CancellationTokenSource(1000)).Result;
+			if (!success)
+			{
+				generatingMessage.DeleteAsync();
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", your level took too long to generate.\n" +
+				  "If this happens regularly with this config, please edit the config to make the levels smaller.");
+				return false;
+			}
+
 			string response = await generationManager.UploadLevel();
 
 			generatingMessage.DeleteAsync();
