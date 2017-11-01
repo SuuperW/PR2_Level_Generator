@@ -354,11 +354,11 @@ namespace LevelGenBot
 		private async Task<bool> AddTrustedUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
-			foreach (SocketUser user in msg.MentionedUsers)
+			foreach (ITag tag in msg.Tags)
 			{
-				if (user.Id != BotID)
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
 				{
-					if (specialUsers.AddTrustedUser(user.Id))
+					if (specialUsers.AddTrustedUser(tag.Key))
 						count++;
 				}
 			}
@@ -369,11 +369,11 @@ namespace LevelGenBot
 		private async Task<bool> RemoveTrustedUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
-			foreach (SocketUser user in msg.MentionedUsers)
+			foreach (ITag tag in msg.Tags)
 			{
-				if (user.Id != BotID)
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
 				{
-					if (specialUsers.RemoveTrustedUser(user.Id))
+					if (specialUsers.RemoveTrustedUser(tag.Key))
 						count++;
 				}
 			}
@@ -583,11 +583,11 @@ namespace LevelGenBot
 		private async Task<bool> BanUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
-			foreach (SocketUser user in msg.MentionedUsers)
+			foreach (ITag tag in msg.Tags)
 			{
-				if (user.Id != BotID)
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
 				{
-					if (specialUsers.BanUser(user.Id))
+					if (specialUsers.BanUser(tag.Key))
 						count++;
 				}
 			}
@@ -598,11 +598,11 @@ namespace LevelGenBot
 		private async Task<bool> UnbanUser(SocketMessage msg, params string[] args)
 		{
 			int count = 0;
-			foreach (SocketUser user in msg.MentionedUsers)
+			foreach (ITag tag in msg.Tags)
 			{
-				if (user.Id != BotID)
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
 				{
-					if (specialUsers.UnbanUser(user.Id))
+					if (specialUsers.UnbanUser(tag.Key))
 						count++;
 				}
 			}
