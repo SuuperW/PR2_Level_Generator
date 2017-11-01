@@ -262,6 +262,8 @@ namespace LevelGenBot
 			ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
 			ownerBotCommands.Add("remove_trusted_user", new BotCommand(RemoveTrustedUser));
 			ownerBotCommands.Add("gtfo", new BotCommand(GTFO));
+			ownerBotCommands.Add("ban_user", new BotCommand(BanUser));
+			ownerBotCommands.Add("unban_user", new BotCommand(UnbanUser));
 
 			bannedCommand = new BotCommand(SendBannedMessage);
 		}
@@ -300,6 +302,7 @@ namespace LevelGenBot
 			  "For details on how to use this bot, say `help`.");
 			return true;
 		}
+
 		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
@@ -559,6 +562,37 @@ namespace LevelGenBot
 		{
 			await msg.Author.SendMessageAsync("You have been banned from this bot.");
 			return true;
+		}
+
+		private async Task<bool> BanUser(SocketMessage msg, params string[] args)
+		{
+			int count = 0;
+			foreach (SocketUser user in msg.MentionedUsers)
+			{
+				if (user.Id != BotID)
+				{
+					if (specialUsers.BanUser(user.Id))
+						count++;
+				}
+			}
+
+			await msg.Channel.SendMessageAsync(count + " user(s) have been banned.");
+			return count != 0;
+		}
+		private async Task<bool> UnbanUser(SocketMessage msg, params string[] args)
+		{
+			int count = 0;
+			foreach (SocketUser user in msg.MentionedUsers)
+			{
+				if (user.Id != BotID)
+				{
+					if (specialUsers.UnbanUser(user.Id))
+						count++;
+				}
+			}
+
+			await msg.Channel.SendMessageAsync(count + " user(s) have been unbanned.");
+			return count != 0;
 		}
 
 		#endregion
