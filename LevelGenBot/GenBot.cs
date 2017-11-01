@@ -19,6 +19,7 @@ namespace LevelGenBot
 	class GenBot
 	{
 		string bot_token;
+		string bot_name_discrim;
 		string pr2_username;
 		string pr2_token;
 		const string configsPath = "GenConfigs";
@@ -47,6 +48,11 @@ namespace LevelGenBot
 			pr2_token = json["pr2_token"].ToString();
 
 			specialUsers = new SpecialUsersCollection("special users.txt");
+
+			helpStrings = new SortedDictionary<string, string>();
+			JObject helpJson = JObject.Parse(File.ReadAllText("helpTopics.txt"));
+			foreach (KeyValuePair<string, JToken> item in helpJson)
+				helpStrings[item.Key] = item.Value.ToString();
 
 			InitializeBotCommandsList();
 
@@ -89,7 +95,12 @@ namespace LevelGenBot
 		async Task<DiscordSocketClient> ConnectSocketClient()
 		{
 			DiscordSocketClient client = new DiscordSocketClient();
-			client.Ready += () => { Connected?.Invoke(); return null; };
+			client.Ready += () =>
+			{
+				bot_name_discrim = socketClient.CurrentUser.Username + "#" + socketClient.CurrentUser.Discriminator;
+				Connected?.Invoke();
+				return null;
+			};
 			client.Disconnected += (e) => { Disconnected?.Invoke(); return null; };
 
 			await client.LoginAsync(TokenType.Bot, bot_token);
@@ -179,11 +190,17 @@ namespace LevelGenBot
 				else if (specialUsers.Owner == msg.Author.Id && ownerBotCommands.ContainsKey(commandStr))
 					command = ownerBotCommands[commandStr];
 				else
-					command = everybodyBotCommands["small_help"];
+				{
+					command = everybodyBotCommands["help"];
+					args = new string[] { "help", "_invalid_command" };
+				}
 			}
 			// If the bot is mentioned, send a help message.
 			else if (msg.MentionedUsers.FirstOrDefault((u) => u.Id == socketClient.CurrentUser.Id) != null)
-				command = everybodyBotCommands["small_help"];
+			{
+				command = everybodyBotCommands["help"];
+				args = new string[] { "help", "_hello" };
+			}
 
 			return command;
 		}
@@ -252,8 +269,9 @@ namespace LevelGenBot
 		private void InitializeBotCommandsList()
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
-			everybodyBotCommands.Add("small_help", new BotCommand(SendSmallHelpMessage));
 			everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
+			everybodyBotCommands.Add("help_topics", new BotCommand(SendHelpTopicsMessage));
+			everybodyBotCommands.Add("commands", new BotCommand(SendCommandsList));
 			everybodyBotCommands.Add("config_list", new BotCommand(SendConfigsListMessage));
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
 			everybodyBotCommands.Add("get_config", new BotCommand(GetConfigFile, 5));
@@ -273,7 +291,39 @@ namespace LevelGenBot
 			bannedCommand = new BotCommand(SendBannedMessage);
 		}
 
+		private SortedDictionary<string, string> helpStrings;
 		private async Task<bool> SendHelpMessage(SocketMessage msg, params string[] args)
+		{
+			string helpTopic = args.Length > 1 ? args[1] : "_default";
+
+			if (helpStrings.ContainsKey(helpTopic))
+			{
+				await msg.Author.SendMessageAsync(helpStrings[helpTopic]
+				  .Replace("@me", "@" + bot_name_discrim)
+				  .Replace("@pr2acc", pr2_username));
+			}
+			else
+			{
+				await msg.Author.SendMessageAsync("I could not find the help topic you gave me. To see a list of available help topics, use the command `help_topics`.");
+				return false;
+			}
+
+			return true;
+		}
+		private async Task<bool> SendHelpTopicsMessage(SocketMessage msg, params string[] args)
+		{
+			StringBuilder str = new StringBuilder("Here is the list of available help topics:```");
+			foreach (string topic in helpStrings.Keys)
+			{
+				if (!topic.StartsWith('_'))
+					str.Append("\n" + topic);
+			}
+			str.Append("```");
+
+			await msg.Author.SendMessageAsync(str.ToString());
+			return true;
+		}
+		private async Task<bool> SendCommandsList(SocketMessage msg, params string[] args)
 		{
 			StringBuilder availableCommands = new StringBuilder();
 			foreach (KeyValuePair<string, BotCommand> kvp in everybodyBotCommands)
@@ -289,22 +339,7 @@ namespace LevelGenBot
 					availableCommands.Append("\n" + kvp.Key);
 			}
 
-			await msg.Author.SendMessageAsync("To use this bot send a message with the format " +
-			  "`@me command [command arguments]` where `@me` is replaced with a mention of this bot.\n" +
-			  "If a command or argument contains a space, surround it with quotation marks.\n\n" +
-			  "Example command: `@me generate \"easy race\"`\n\n" +
-			  "If you are sending the command via DMs, mentioning me is _not required_.\n" +
-			  "When a level is generated, it will be saved under the PR2 username 'R Races'. " +
-			  "Most likely it will also be password-proteced with a blank password; to get in, just press 'Check' without typing in anything.\n\n" +
-			  "List of available commands: ```" + availableCommands.ToString() + "```");
-
-			Console.WriteLine("Sent help to " + msg.Author.Username + "#" + msg.Author.Discriminator + ".");
-			return true;
-		}
-		private async Task<bool> SendSmallHelpMessage(SocketMessage msg, params string[] args)
-		{
-			await msg.Author.SendMessageAsync("Command format: `@me command [args]`\n" +
-			  "For details on how to use this bot, say `help`.");
+			await msg.Author.SendMessageAsync("Here are the commands you can use: ```" + availableCommands + "```");
 			return true;
 		}
 
