@@ -384,7 +384,10 @@ namespace LevelGenBot
 			StringBuilder configsList = new StringBuilder("Here is a list of all available configs:\n```\n");
 			foreach (string file in filesList)
 				configsList.Append(new FileInfo(file).Name + "\n");
-			filesList = Directory.EnumerateFiles(Path.Combine(configsPath, msg.Author.Id.ToString()), "*", SearchOption.TopDirectoryOnly);
+
+			string privateConfigs = Path.Combine(configsPath, msg.Author.Id.ToString());
+			Directory.CreateDirectory(privateConfigs);
+			filesList = Directory.EnumerateFiles(privateConfigs, "*", SearchOption.TopDirectoryOnly);
 			foreach (string file in filesList)
 				configsList.Append("me/" + new FileInfo(file).Name + "\n");
 			configsList.Append("```");
