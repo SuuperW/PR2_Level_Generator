@@ -59,7 +59,7 @@ namespace LevelGenBot
 		{
 			if (IsUserTrusted(userID))
 			{
-				TrustedUsers.Remove(userID);
+				TrustedUsers.FirstOrDefault((t) => t.ToString() == userID.ToString()).Remove();
 				Save();
 				return true;
 			}
@@ -80,7 +80,7 @@ namespace LevelGenBot
 		{
 			if (IsUserBanned(userID))
 			{
-				BannedUsers.Remove(userID);
+				BannedUsers.FirstOrDefault((t) => t.ToString() == userID.ToString()).Remove();
 				Save();
 				return true;
 			}
