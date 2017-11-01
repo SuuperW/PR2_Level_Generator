@@ -113,6 +113,14 @@ namespace PR2_Level_Generator
             t.Restart();
 			this.cts = cts;
 
+			// Limit level size
+			if (Length > 200000)
+				Length = 200000;
+			if (Height > 100000)
+				Height = 100000;
+			if (Floor_Thickness > 50)
+				Floor_Thickness = 50;
+
             Map.ClearBlocks();
 			Map.BGC = 0xbbbbdd;
             // Starting points; floor; ceiling; walls; finish.
