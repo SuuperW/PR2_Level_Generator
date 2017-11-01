@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PR2_Level_Generator
 {
@@ -102,12 +104,14 @@ namespace PR2_Level_Generator
         private const int BLOCK_FINISHABLE = 103;
 
         Random R;
+		CancellationTokenSource cts;
 
         System.Diagnostics.Stopwatch t = new System.Diagnostics.Stopwatch();
         public int LastSeed { get; private set; }
-        public void GenerateMap()
+        public Task<bool> GenerateMap(CancellationTokenSource cts)
         {
             t.Restart();
+			this.cts = cts;
 
             Map.ClearBlocks();
 			Map.BGC = 0xbbbbdd;
@@ -134,6 +138,9 @@ namespace PR2_Level_Generator
                 List<int> openFromLeft = GetOpenSpots(x);
                 PlaceFillBlocks(x, openFromLeft);
                 PlaceMetaBlocks(x, openFromLeft);
+
+				if (cts.IsCancellationRequested)
+					return Task.FromResult(false);
             }
 
             // Clean up meta blocks
@@ -143,8 +150,13 @@ namespace PR2_Level_Generator
             if (Easy != -1 && new Block() { T = Block_Type }.IsSolid())
                 BlockTraps();
 
+			if (cts.IsCancellationRequested)
+				return Task.FromResult(false);
+
             t.Stop();
             Console.WriteLine("Map Generated. [" + (t.ElapsedMilliseconds / 1000.0) + "s]");
+
+			return Task.FromResult(true);
         }
 
         private void PlaceBordersAndEnds()
@@ -292,6 +304,9 @@ namespace PR2_Level_Generator
                     Map.ReplaceBlock(newFinishables[iF].X, newFinishables[iF].Y, BLOCK_FINISHABLE);
                     finishableFrom.Add(newFinishables[iF]);
                 }
+
+				if (cts.IsCancellationRequested)
+					return;
             }
 
             // Check if level was determined impossible.
@@ -310,6 +325,9 @@ namespace PR2_Level_Generator
                     if (!Map.BlockExists(iX, iY))
                         Map.AddBlock(iX, iY, Block_Type);
                 }
+
+				if (cts.IsCancellationRequested)
+					return;
             }
 
             Map.ClearType(BLOCK_FINISHABLE);

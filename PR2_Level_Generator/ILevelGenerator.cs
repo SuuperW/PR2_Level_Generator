@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace PR2_Level_Generator
 {
@@ -11,7 +12,7 @@ namespace PR2_Level_Generator
 		MapLE Map { get; }
 
 		int LastSeed { get; }
-		void GenerateMap();
+		Task<bool> GenerateMap(CancellationTokenSource cts);
 
 		string GetSaveString();
 	}
