@@ -361,6 +361,17 @@ namespace LevelGenBot
 			generationManager.username = pr2_username;
 			generationManager.login_token = pr2_token;
 
+			// modify config
+			for (int i = 2; i < args.Length; i += 2)
+			{
+				if (args.Length <= i + 1 || !generationManager.SetParamOrSetting(args[i], args[i + 1]))
+				{
+					await msg.Channel.SendMessageAsync(msg.Author.Mention + ", I could not set `" + args[i] +
+					  "`. Level generation cancelled.");
+					return false;
+				}
+			}
+
 			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I am generating and uploading your level...");
 
