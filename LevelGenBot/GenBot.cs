@@ -444,6 +444,12 @@ namespace LevelGenBot
 				return false;
 
 			string str = await GetAttachmentString(msg.Attachments.First());
+			if (str.Length > 0x4000)
+			{
+				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is too big.");
+				return false;
+			}
+
 			ILevelGenerator gen = GeneratorFromSettings(str);
 			if (gen == null)
 			{
@@ -464,6 +470,13 @@ namespace LevelGenBot
 				fileName = Path.Combine(dir, new FileInfo(fileName).Name);
 				if (!Directory.Exists(dir))
 					Directory.CreateDirectory(dir);
+			}
+
+			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
+			{
+				msg.Channel.SendMessageAsync(msg.Author.Mention + ", you have too many saved configs. " +
+				  "Please delete one before uploading any more.");
+				return false;
 			}
 
 			File.WriteAllText(fileName, str);
@@ -500,14 +513,9 @@ namespace LevelGenBot
 			{
 				if (gen.Map.GetSetting("live") != "0" || gen.Map.GetSetting("hasPass") != "1")
 					return "Your level must be unpublished and have a password.";
-
-
 			}
 
-			if (gen.Map.GetSetting("title") != fileName)
-				return "Your level's title must match the file name.";
-
-			gen.Map.SetSetting("credits", userID.ToString());
+			gen.Map.SetSetting("credits", gen.Map.GetSetting("credits") + " [" + userID.ToString() + "]");
 			return null;
 		}
 		private async Task SendInvalidConfigMesage(SocketMessage msg, string configName)
