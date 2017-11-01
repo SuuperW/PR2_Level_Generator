@@ -414,18 +414,28 @@ namespace LevelGenBot
 				return false;
 			}
 
-			if (args.Contains("text"))
+			bool getFile = !args.Contains("text");
+			string messageStr = msg.Author.Mention + ", here is the '" + args[1] + "' config file.";
+			if (!getFile)
 			{
-				string str = generationManager.GetSaveObject().ToString();
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", here are the settings for config '" +
-				  args[1] + "'.\n```" + str + "```");
+				string fileStr = generationManager.GetSaveObject().ToString();
+				messageStr = msg.Author.Mention + ", here are the settings for config '" +
+				  args[1] + "'.\n```" + fileStr + "```";
+				if (messageStr.Length < 2000)
+					await msg.Channel.SendMessageAsync(messageStr);
+				else
+				{
+					getFile = true;
+					messageStr = msg.Author.Mention + ", the contents of the '" + args[1] +
+					  "' config file are too large to post in a Discord message, so here is the file.";
+				}
 			}
-			else
+			
+			if (getFile)
 			{
 				FileStream stream = new FileStream(filePath, FileMode.Open);
 				string uploadFileName = Path.GetFileNameWithoutExtension(filePath) + ".txt";
-				await msg.Channel.SendFileAsync(stream, uploadFileName, msg.Author.Mention +
-				  ", here is the '" + args[1] + "' config file.");
+				await msg.Channel.SendFileAsync(stream, uploadFileName, messageStr);
 			}
 			return true;
 		}
