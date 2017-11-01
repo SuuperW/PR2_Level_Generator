@@ -116,8 +116,11 @@ namespace LevelGenBot
 		{
 			if (specialUsers.IsUserBanned(msg.Author.Id))
 			{
-				if (commandHistory.TimeSinceLastCommand(msg.Author.Id) < 30)
+				if (commandHistory.TimeSinceLastCommand(msg.Author.Id) > 30)
+				{
 					await bannedCommand.Delegate(msg, null);
+					commandHistory.AddCommand(bannedCommand.Name, msg.Author.Id);
+				}
 				return;
 			}
 
@@ -430,7 +433,7 @@ namespace LevelGenBot
 					  "' config file are too large to post in a Discord message, so here is the file.";
 				}
 			}
-			
+
 			if (getFile)
 			{
 				FileStream stream = new FileStream(filePath, FileMode.Open);
