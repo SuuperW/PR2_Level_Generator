@@ -224,6 +224,8 @@ namespace LevelGenBot
 				if (quote != -1 && (quote < space || space == -1))
 				{
 					newIndex = msg.IndexOf('"', quote + 1);
+					if (newIndex == -1)
+						newIndex = msg.Length;
 					list.Add(msg.Substring(quote + 1, newIndex - quote - 1));
 					newIndex++;
 				}
@@ -237,7 +239,7 @@ namespace LevelGenBot
 				}
 
 				index = newIndex;
-			} while (index != msg.Length);
+			} while (index < msg.Length);
 
 			return list.ToArray();
 		}
