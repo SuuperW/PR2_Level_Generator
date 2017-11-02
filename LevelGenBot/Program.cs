@@ -13,20 +13,13 @@ namespace LevelGenBot
 	class Program
 	{
 		static GenBot bot;
-		static bool end = false;
 
-		static void Main(string[] args)
-		{
-			MainAsync();
-
-			while (!end) Task.Delay(500).Wait();
-		}
-		private static async Task MainAsync()
+		static async Task Main(string[] args)
 		{
 			bot = new GenBot();
 			bot.Connected += Connected;
 			bot.Disconnected += Disconnected;
-			await bot.ConnectAndStart();
+			await ConnectBot();
 
 			string userInput = "";
 			while (userInput != "e")
@@ -36,25 +29,28 @@ namespace LevelGenBot
 				if (userInput == "connect")
 				{
 					if (!bot.IsConnected)
-						await bot.ConnectAndStart();
+						await ConnectBot();
 				}
 				else if (userInput == "dc")
 				{
 					if (bot.IsConnected)
-					{
 						await bot.Disconnect();
-						while (bot.IsConnected)
-							Task.Delay(250);
-						Console.WriteLine("Bot reports offline.");
-					}
 				}
 			}
 
-			await bot.Disconnect();
-			while (bot.IsConnected)
-				Task.Delay(250);
+			if (bot.IsConnected)
+				await bot.Disconnect();
+		}
 
-			end = true;
+		static async Task ConnectBot()
+		{
+			Console.WriteLine("Connecting...");
+			bool success = false;
+			while (!success)
+			{
+				try { await bot.ConnectAndStart(); success = true; }
+				catch { Console.WriteLine("Connection error. Retrying in 5 seconds..."); await Task.Delay(5000); }
+			}
 		}
 
 		static void Connected()
