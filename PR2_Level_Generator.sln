@@ -5,7 +5,10 @@ VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PR2_Level_Generator", "PR2_Level_Generator\PR2_Level_Generator.csproj", "{BE32BC90-9145-4B31-BC75-3844CD893F28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LevelGenBot", "LevelGenBot\LevelGenBot.csproj", "{B6906AA5-E44C-4561-939A-886771987DC2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LevelGenBot", "LevelGenBot\LevelGenBot.csproj", "{B6906AA5-E44C-4561-939A-886771987DC2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BE32BC90-9145-4B31-BC75-3844CD893F28} = {BE32BC90-9145-4B31-BC75-3844CD893F28}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
