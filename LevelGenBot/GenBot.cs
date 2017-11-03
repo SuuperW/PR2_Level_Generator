@@ -145,7 +145,8 @@ namespace LevelGenBot
 				if (command != null)
 				{
 					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
-					command = commandHistory.CommandOrWait(command, msg.Author.Id);
+					if (msg.Author.Id != specialUsers.Owner)
+						command = commandHistory.CommandOrWait(command, msg.Author.Id);
 
 					if (await command.Delegate(msg, args))
 						commandHistory.AddCommand(command.Name, msg.Author.Id);
