@@ -377,7 +377,7 @@ namespace LevelGenBot
 				}
 			}
 
-			RestUserMessage generatingMessage = await msg.Channel.SendMessageAsync(msg.Author.Mention +
+			Task<RestUserMessage> sendingGenerateMessage = msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
@@ -386,17 +386,16 @@ namespace LevelGenBot
 			bool success = generationManager.generator.GenerateMap(new System.Threading.CancellationTokenSource(1000)).Result;
 			if (!success)
 			{
-				await generatingMessage.DeleteAsync();
-				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", your level took too long to generate.\n" +
+				await sendingGenerateMessage.Result.ModifyAsync((p) => p.Content = msg.Author.Mention + ", your level took too long to generate.\n" +
 				  "If this happens regularly with this config, please edit the config to make the levels smaller.");
 				return false;
 			}
 
 			string response = await generationManager.UploadLevel();
 
-			await generatingMessage.DeleteAsync();
-			await msg.Channel.SendMessageAsync(msg.Author.Mention +
+			await sendingGenerateMessage.Result.ModifyAsync((p) => p.Content = msg.Author.Mention +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
+
 			Console.WriteLine("Uploaded: " + response + " [requested by " +
 			  msg.Author.Username + "#" + msg.Author.Discriminator + "]");
 			return true;
