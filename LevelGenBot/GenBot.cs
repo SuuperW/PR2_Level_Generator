@@ -78,6 +78,8 @@ namespace LevelGenBot
 
 		public async Task Disconnect()
 		{
+			await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("I'm diconnecting now.");
+
 			await restClient.LogoutAsync();
 
 			await socketClient.SetStatusAsync(UserStatus.Invisible);
