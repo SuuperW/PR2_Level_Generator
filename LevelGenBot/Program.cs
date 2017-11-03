@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
-
-using Discord.Net;
-using Discord.Rest;
-using Discord;
-using Discord.WebSocket;
+using System.Text;
 
 namespace LevelGenBot
 {
@@ -16,30 +11,50 @@ namespace LevelGenBot
 
 		static async Task Main(string[] args)
 		{
-			bot = new GenBot();
-			bot.Connected += Connected;
-			bot.Disconnected += Disconnected;
-			await ConnectBot();
-
-			string userInput = "";
-			while (userInput != "e")
+			try
 			{
-				userInput = Console.ReadLine();
+				bot = new GenBot();
+				bot.Connected += Connected;
+				bot.Disconnected += Disconnected;
+				await ConnectBot();
 
-				if (userInput == "connect")
+				string userInput = "";
+				while (userInput != "e")
 				{
-					if (!bot.IsConnected)
-						await ConnectBot();
+					userInput = Console.ReadLine();
+
+					if (userInput == "connect")
+					{
+						if (!bot.IsConnected)
+							await ConnectBot();
+					}
+					else if (userInput == "dc")
+					{
+						if (bot.IsConnected)
+							await bot.Disconnect();
+					}
 				}
-				else if (userInput == "dc")
-				{
-					if (bot.IsConnected)
-						await bot.Disconnect();
-				}
+
+				if (bot.IsConnected)
+					await bot.Disconnect();
 			}
+			catch (Exception ex)
+			{
+				StringBuilder errorText = new StringBuilder();
+				errorText.Append(ex.Message);
+				errorText.Append("\n\n");
+				errorText.Append(ex.StackTrace);
+				while (ex.InnerException != null)
+				{
+					ex = ex.InnerException;
+					errorText.Append("\n\n\n");
+					errorText.Append(ex.Message);
+					errorText.Append("\n\n");
+					errorText.Append(ex.StackTrace);
+				}
 
-			if (bot.IsConnected)
-				await bot.Disconnect();
+				System.IO.File.WriteAllText("error.txt", errorText.ToString());
+			}
 		}
 
 		static async Task ConnectBot()
