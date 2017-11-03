@@ -21,4 +21,10 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="helpTopics.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

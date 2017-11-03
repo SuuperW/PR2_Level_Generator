@@ -60,6 +60,8 @@ namespace LevelGenBot
 			if (Directory.Exists("temp"))
 				Directory.Delete("temp");
 			Directory.CreateDirectory("temp");
+
+			Directory.CreateDirectory(configsPath);
 		}
 
 		public event Action Connected;
