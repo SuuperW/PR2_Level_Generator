@@ -381,7 +381,7 @@ namespace LevelGenBot
 			bool success = generationManager.generator.GenerateMap(new System.Threading.CancellationTokenSource(1000)).Result;
 			if (!success)
 			{
-				generatingMessage.DeleteAsync();
+				await generatingMessage.DeleteAsync();
 				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", your level took too long to generate.\n" +
 				  "If this happens regularly with this config, please edit the config to make the levels smaller.");
 				return false;
@@ -389,7 +389,7 @@ namespace LevelGenBot
 
 			string response = await generationManager.UploadLevel();
 
-			generatingMessage.DeleteAsync();
+			await generatingMessage.DeleteAsync();
 			await msg.Channel.SendMessageAsync(msg.Author.Mention +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
 			Console.WriteLine("Uploaded: " + response + " [requested by " +
@@ -521,14 +521,14 @@ namespace LevelGenBot
 			string str = await GetAttachmentString(msg.Attachments.First());
 			if (str.Length > 0x4000)
 			{
-				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is too big.");
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is too big.");
 				return false;
 			}
 
 			ILevelGenerator gen = GeneratorFromSettings(str);
 			if (gen == null)
 			{
-				msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is invalid.");
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", the config file you provided is invalid.");
 				return false;
 			}
 
@@ -549,7 +549,7 @@ namespace LevelGenBot
 
 			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
 			{
-				msg.Channel.SendMessageAsync(msg.Author.Mention + ", you have too many saved configs. " +
+				await msg.Channel.SendMessageAsync(msg.Author.Mention + ", you have too many saved configs. " +
 				  "Please delete one before uploading any more.");
 				return false;
 			}
