@@ -18,25 +18,30 @@ namespace LevelGenBot
 				bot.Disconnected += Disconnected;
 				await ConnectBot();
 
-				string userInput = "";
-				while (userInput != "e")
+				if (args.Length > 0 && args[0] == "bg")
+					await Task.Delay(-1);
+				else
 				{
-					userInput = Console.ReadLine();
+					string userInput = "";
+					while (userInput != "e")
+					{
+						userInput = Console.ReadLine();
 
-					if (userInput == "connect")
-					{
-						if (!bot.IsConnected)
-							await ConnectBot();
+						if (userInput == "connect")
+						{
+							if (!bot.IsConnected)
+								await ConnectBot();
+						}
+						else if (userInput == "dc")
+						{
+							if (bot.IsConnected)
+								await bot.Disconnect();
+						}
 					}
-					else if (userInput == "dc")
-					{
-						if (bot.IsConnected)
-							await bot.Disconnect();
-					}
+
+					if (bot.IsConnected)
+						await bot.Disconnect();
 				}
-
-				if (bot.IsConnected)
-					await bot.Disconnect();
 			}
 			catch (Exception ex)
 			{
