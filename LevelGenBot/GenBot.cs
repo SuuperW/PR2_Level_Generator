@@ -153,6 +153,24 @@ namespace LevelGenBot
 		{
 			return File.AppendAllTextAsync("output.xml", text);
 		}
+		Task LogError(Exception ex)
+		{
+			StringBuilder errorStr = new StringBuilder();
+			while (ex != null)
+			{
+				errorStr.Append(ex.GetType().ToString());
+				errorStr.Append("\n");
+				errorStr.Append(ex.Message);
+				errorStr.Append("\n\n");
+				errorStr.Append(ex.StackTrace);
+				errorStr.Append("\n\n\n");
+				ex = ex.InnerException;
+			}
+			errorStr.Length -= 3;
+
+			return AppendToLog("<error time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
+			  "'>\n" + errorStr.ToString() + "\n</receive_command>\n");
+		}
 
 		private async Task SocketClient_MessageReceived(SocketMessage msg)
 		{
@@ -163,9 +181,7 @@ namespace LevelGenBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("\nError:\n");
-				Console.WriteLine(ex.Message);
-				Console.WriteLine(ex.StackTrace);
+				await LogError(ex);
 			}
 		}
 		private async Task HandleMessage(SocketMessage msg)
@@ -185,7 +201,8 @@ namespace LevelGenBot
 				BotCommand command = MessageToCommand(msg, out string[] args);
 				if (command != null)
 				{
-					Console.WriteLine("Received command from " + msg.Author.Username + ": " + msg.Content);
+					await AppendToLog("<receive_command time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
+					  "' channel='" + msg.Channel.Name + "'>\n" + msg.Content + "\n</receive_command>\n");
 					if (msg.Author.Id != specialUsers.Owner)
 						command = commandHistory.CommandOrWait(command, msg.Author.Id);
 
@@ -206,7 +223,6 @@ namespace LevelGenBot
 			}
 			catch (Exception ex)
 			{
-				//System.Diagnostics.Debugger.Break();
 				await SendMessage(msg.Channel, msg.Author.Mention +
 					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
@@ -216,6 +232,8 @@ namespace LevelGenBot
 				IDMChannel channel = await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync();
 				await SendFile(channel, fileName, "I encountered an error. Here are the details.");
 				File.Delete(fileName);
+
+				await LogError(ex);
 			}
 		}
 
