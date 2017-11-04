@@ -72,7 +72,7 @@ namespace LevelGenBot
 		public event Action Disconnected;
 		public async Task ConnectAndStart()
 		{
-			AppendToLog("<begin_login time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
+			AppendToLog("<begin_login time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></begin_login>\n", 2);
 
 			restClient = await ConnectRestClient();
 			socketClient = await ConnectSocketClient();
@@ -84,7 +84,7 @@ namespace LevelGenBot
 
 		public async Task Disconnect()
 		{
-			AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
+			AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></disconnect>\n", 2);
 
 			await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("I'm diconnecting now.");
 
@@ -111,7 +111,7 @@ namespace LevelGenBot
 			{
 				bot_name_discrim = socketClient.CurrentUser.Username + "#" + socketClient.CurrentUser.Discriminator;
 				Connected?.Invoke();
-				AppendToLog("<ready time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
+				AppendToLog("<ready time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></ready>\n", 2);
 				return null;
 			};
 			client.Disconnected += (e) => { Disconnected?.Invoke(); return null; };
