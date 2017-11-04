@@ -23,6 +23,7 @@ namespace LevelGenBot
 		string pr2_username;
 		string pr2_token;
 		const string configsPath = "GenConfigs";
+		const string outputPath = "output.xml";
 
 		int tempFileID = -1;
 		private string GetTempFileName()
@@ -122,7 +123,7 @@ namespace LevelGenBot
 			await logTask;
 			return await ret;
 		}
-		async Task<IUserMessage> SendFile(IMessageChannel channel, Stream fileStream, string fileName, string text)
+		async Task<IUserMessage> SendFile(IMessageChannel channel, Stream fileStream, string fileName, string text = null)
 		{ 
 			Task logTask = AppendToLog("<send_file time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
 			  "' channel='" + channel.Name + "' file=' " + fileName + "'>\n" + text + "\n</send_file>\n");
@@ -131,7 +132,7 @@ namespace LevelGenBot
 			await logTask;
 			return await ret;
 		}
-		async Task<IUserMessage> SendFile(IMessageChannel channel, string fileName, string text)
+		async Task<IUserMessage> SendFile(IMessageChannel channel, string fileName, string text = null)
 		{ 
 			Task logTask = AppendToLog("<send_file time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
 			  "' channel='" + channel.Name + "' file=' " + fileName + "'>\n" + text + "\n</send_file>\n");
@@ -151,7 +152,7 @@ namespace LevelGenBot
 		}
 		Task AppendToLog(string text)
 		{
-			return File.AppendAllTextAsync("output.xml", text);
+			return File.AppendAllTextAsync(outputPath, text);
 		}
 		Task LogError(Exception ex)
 		{
@@ -168,6 +169,7 @@ namespace LevelGenBot
 			}
 			errorStr.Length -= 3;
 
+			File.WriteAllText("error.txt", errorStr.ToString());
 			return AppendToLog("<error time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
 			  "'>\n" + errorStr.ToString() + "\n</receive_command>\n");
 		}
@@ -223,17 +225,12 @@ namespace LevelGenBot
 			}
 			catch (Exception ex)
 			{
+				await LogError(ex);
+
+				await SendFile(await socketClient.CurrentUser.GetOrCreateDMChannelAsync(), "error.txt", "I've encountered an error.");
 				await SendMessage(msg.Channel, msg.Author.Mention +
 					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
-				string fileName = GetTempFileName() + ".txt";
-				File.WriteAllText(fileName, "Error: " + ex.GetType().ToString() + "\n\n" +
-				  ex.Message + "\n\n" + ex.StackTrace);
-				IDMChannel channel = await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync();
-				await SendFile(channel, fileName, "I encountered an error. Here are the details.");
-				File.Delete(fileName);
-
-				await LogError(ex);
 			}
 		}
 
