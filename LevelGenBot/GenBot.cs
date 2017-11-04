@@ -33,7 +33,6 @@ namespace LevelGenBot
 			return "temp/" + tempFileID;
 		}
 
-		DiscordRestClient restClient;
 		DiscordSocketClient socketClient;
 
 		ulong BotID { get => socketClient.CurrentUser.Id; }
@@ -74,7 +73,6 @@ namespace LevelGenBot
 		{
 			AppendToLog("<begin_login time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></begin_login>\n", 2);
 
-			restClient = await ConnectRestClient();
 			socketClient = await ConnectSocketClient();
 
 			socketClient.MessageReceived += SocketClient_MessageReceived;
@@ -87,8 +85,6 @@ namespace LevelGenBot
 			AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></disconnect>\n", 2);
 
 			await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("I'm diconnecting now.");
-
-			await restClient.LogoutAsync();
 
 			await socketClient.SetStatusAsync(UserStatus.Invisible);
 			// Wait, just to verify that the status update has time to go through.
