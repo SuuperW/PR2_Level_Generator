@@ -24,6 +24,7 @@ namespace LevelGenBot
 		string pr2_token;
 		const string configsPath = "GenConfigs";
 		const string outputPath = "output.xml";
+		int loggingLevel;
 
 		int tempFileID = -1;
 		private string GetTempFileName()
@@ -41,8 +42,10 @@ namespace LevelGenBot
 		SpecialUsersCollection specialUsers;
 		CommandHistory commandHistory = new CommandHistory();
 
-		public GenBot()
+		public GenBot(int loggingLevel = 2)
 		{
+			this.loggingLevel = loggingLevel;
+
 			JObject json = JObject.Parse(File.ReadAllText("secrets.txt"));
 			bot_token = json["bot_token"].ToString();
 			pr2_username = json["pr2_username"].ToString();
@@ -69,7 +72,7 @@ namespace LevelGenBot
 		public event Action Disconnected;
 		public async Task ConnectAndStart()
 		{
-			AppendToLog("<begin_login time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />");
+			AppendToLog("<begin_login time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
 
 			restClient = await ConnectRestClient();
 			socketClient = await ConnectSocketClient();
@@ -81,7 +84,7 @@ namespace LevelGenBot
 
 		public async Task Disconnect()
 		{
-			AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />");
+			AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
 
 			await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("I'm diconnecting now.");
 
@@ -108,7 +111,7 @@ namespace LevelGenBot
 			{
 				bot_name_discrim = socketClient.CurrentUser.Username + "#" + socketClient.CurrentUser.Discriminator;
 				Connected?.Invoke();
-				AppendToLog("<ready time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />");
+				AppendToLog("<ready time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + " />", 2);
 				return null;
 			};
 			client.Disconnected += (e) => { Disconnected?.Invoke(); return null; };
@@ -155,9 +158,12 @@ namespace LevelGenBot
 			await logTask;
 			await ret;
 		}
-		Task AppendToLog(string text)
+		Task AppendToLog(string text, int priority = 1)
 		{
-			return File.AppendAllTextAsync(outputPath, text);
+			if (priority >= loggingLevel)
+				return File.AppendAllTextAsync(outputPath, text);
+			else
+				return Task.CompletedTask;
 		}
 		Task LogError(Exception ex)
 		{

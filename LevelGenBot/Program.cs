@@ -13,12 +13,20 @@ namespace LevelGenBot
 		{
 			try
 			{
-				bot = new GenBot();
+				string logStr = args.FirstOrDefault((s) => s.StartsWith("log"));
+				if (logStr != null)
+				{
+					int.TryParse(logStr.Substring(3), out int logLevel);
+					bot = new GenBot(logLevel);
+				}
+				else
+					bot = new GenBot();
+
 				bot.Connected += Connected;
 				bot.Disconnected += Disconnected;
 				await ConnectBot();
 
-				if (args.Length > 0 && args[0] == "bg")
+				if (args.Contains("bg"))
 					await Task.Delay(-1);
 				else
 				{
