@@ -7,7 +7,9 @@ As a consequence of this, the tool cannot be used as-is to upload levels. You ca
 # LevelGenBot
 A Discord bot which interfaces with PR2_Level_Generator.
 
-To set up this bot, you must first create a Discord bot via Discord's website. (The Discord .NET library includes a easy tutorial on this: https://github.com/RogueException/Discord.Net/blob/dev/docs/guides/getting_started/intro.md)
+To set up this bot, you must first create a Discord bot via Discord's website. (The Discord .NET library includes an easy tutorial on this: https://github.com/RogueException/Discord.Net/blob/dev/docs/guides/getting_started/intro.md)
 Then, create two files in the folder "LevelGenBot": secrets.txt and special users.txt.
-secrets.txt should consist of JSON, with the properties 'bot_token', 'pr2_username', and 'pr2_token', set to your bot's token, the username of the PR2 account to upload levels to, and a login token for said account.
-special users.txt should consist of JSON, with the property 'owner', set to your Discord user ID.
+secrets.txt should consist of JSON, with the properties 'bot_token', 'pr2_username', and 'pr2_token', set to your bot's token, the username of the PR2 account to upload levels to, and a login token for said account. If you do not create this file, the bot cannot run.
+special users.txt should consist of JSON, with the property 'owner', set to your Discord user ID. If you do not create this file, you will not have access to admin commands for the bot.
+
+When running the application, you can provide an argument 'logX' where X is a priority level indicating what should be logged. Possible values are 1 for logging everything, or 2 for logging connection-related events. Default is 2. You can also provide the argument 'bg' to disable reading from the console (allowing the app to run without requiring a window to be open).
