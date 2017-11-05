@@ -23,7 +23,8 @@ namespace LevelGenBot
 		string pr2_username;
 		string pr2_token;
 		const string configsPath = "GenConfigs";
-		const string outputPath = "output.xml";
+		const string outputPath = "files/output.xml";
+		const string errorPath = "files/error.txt";
 		int loggingLevel;
 
 		int tempFileID = -1;
@@ -45,15 +46,17 @@ namespace LevelGenBot
 		{
 			this.loggingLevel = loggingLevel;
 
-			JObject json = JObject.Parse(File.ReadAllText("secrets.txt"));
+			if (!File.Exists("files/secrets.txt"))
+				throw new FileNotFoundException("GenBot could not find secrets.txt. Please see README for info on how to set this up.");
+			JObject json = JObject.Parse(File.ReadAllText("files/secrets.txt"));
 			bot_token = json["bot_token"].ToString();
 			pr2_username = json["pr2_username"].ToString();
 			pr2_token = json["pr2_token"].ToString();
 
-			specialUsers = new SpecialUsersCollection("special users.txt");
+			specialUsers = new SpecialUsersCollection("files/special users.txt");
 
 			helpStrings = new SortedDictionary<string, string>();
-			JObject helpJson = JObject.Parse(File.ReadAllText("helpTopics.txt"));
+			JObject helpJson = JObject.Parse(File.ReadAllText("files/helpTopics.txt"));
 			foreach (KeyValuePair<string, JToken> item in helpJson)
 				helpStrings[item.Key] = item.Value.ToString();
 
@@ -176,7 +179,7 @@ namespace LevelGenBot
 			}
 			errorStr.Length -= 3;
 
-			File.WriteAllText("error.txt", errorStr.ToString());
+			File.WriteAllText(errorPath, errorStr.ToString());
 			return AppendToLog("<error time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
 			  "'>\n" + errorStr.ToString() + "\n</receive_command>\n");
 		}
