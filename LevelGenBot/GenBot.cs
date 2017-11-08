@@ -237,7 +237,7 @@ namespace LevelGenBot
 			{
 				await LogError(ex);
 
-				await SendFile(await socketClient.CurrentUser.GetOrCreateDMChannelAsync(), "error.txt", "I've encountered an error.");
+				await SendFile(await socketClient.CurrentUser.GetOrCreateDMChannelAsync(), errorPath, "I've encountered an error.");
 				await SendMessage(msg.Channel, msg.Author.Mention +
 					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
