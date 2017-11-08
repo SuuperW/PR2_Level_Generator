@@ -237,7 +237,7 @@ namespace LevelGenBot
 			{
 				await LogError(ex);
 
-				await SendFile(await socketClient.CurrentUser.GetOrCreateDMChannelAsync(), errorPath, "I've encountered an error.");
+				await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), errorPath, "I've encountered an error.");
 				await SendMessage(msg.Channel, msg.Author.Mention +
 					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
@@ -358,6 +358,8 @@ namespace LevelGenBot
 			ownerBotCommands.Add("gtfo", new BotCommand(GTFO));
 			ownerBotCommands.Add("ban_user", new BotCommand(BanUser));
 			ownerBotCommands.Add("unban_user", new BotCommand(UnbanUser));
+			ownerBotCommands.Add("get_log", new BotCommand(GetLog));
+			ownerBotCommands.Add("get_error", new BotCommand(GetError));
 
 			bannedCommand = new BotCommand(SendBannedMessage);
 		}
@@ -730,6 +732,17 @@ namespace LevelGenBot
 
 			await SendMessage(msg.Channel, count + " user(s) have been unbanned.");
 			return count != 0;
+		}
+
+		private async Task<bool> GetLog(SocketMessage msg, params string[] args)
+		{
+			await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), outputPath);
+			return true;
+		}
+		private async Task<bool> GetError(SocketMessage msg, params string[] args)
+		{
+			await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), errorPath);
+			return true;
 		}
 
 		#endregion
