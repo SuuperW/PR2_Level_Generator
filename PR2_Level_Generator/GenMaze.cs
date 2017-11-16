@@ -249,7 +249,7 @@ namespace PR2_Level_Generator
             }
 
             // Special stuffs
-            if (Sq_Size > 7)
+            if (Sq_Size > 3)
             {
                 for (int iX = 0; iX < Size; iX++)
                 {
