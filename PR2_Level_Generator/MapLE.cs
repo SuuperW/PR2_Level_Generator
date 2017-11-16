@@ -623,7 +623,8 @@ namespace PR2_Level_Generator
 				ret.Append(",");
 				cBlock = cBlock.next;
 			}
-			ret.Remove(ret.Length - 1, 1);
+			if (ret.Length > 0)
+				ret.Remove(ret.Length - 1, 1);
 
 			return ret.ToString();
 		}
