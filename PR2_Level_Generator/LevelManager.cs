@@ -127,7 +127,7 @@ namespace PR2_Level_Generator
 			}
 			foreach (JProperty j in json["Map Settings"])
 			{
-				if (!SetParamOrSetting(j.Name, j.Value.ToString()))
+				if (!Map.SetSetting(j.Name, j.Value.ToString()))
 				{
 					fail = true;
 					break;
