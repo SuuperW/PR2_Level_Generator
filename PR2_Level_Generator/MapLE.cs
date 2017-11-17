@@ -28,6 +28,9 @@ namespace PR2_Level_Generator
 			settings.Add("live", "0");
 			settings.Add("max_time", "120");
 			settings.Add("password", "");
+
+			for (int i = 0; i < artCodes.Length; i++)
+				artCodes[i] = "";
 		}
 
 		// Block array(s)
