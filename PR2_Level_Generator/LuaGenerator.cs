@@ -33,10 +33,10 @@ namespace PR2_Level_Generator
 					"_G.Generate = Generate;\nend";
 				script.DoString(codeToRun);
 				DynValue initFunction = script.Globals.Get("Initialize");
-				DynValue coroutine = script.CreateCoroutine(initFunction);
-				coroutine.Coroutine.AutoYieldCounter = 100000;
+				Coroutine coroutine = script.CreateCoroutine(initFunction).Coroutine;
+				coroutine.AutoYieldCounter = 100000;
 
-				DynValue result = coroutine.Coroutine.Resume();
+				DynValue result = coroutine.Resume();
 				if (result.Type == DataType.YieldRequest)
 					return "initialization timed out";
 			}
@@ -108,14 +108,14 @@ namespace PR2_Level_Generator
 			Map.ClearBlocks();
 			try
 			{
-				DynValue coroutine = script.CreateCoroutine(script.Globals["Generate"]);
-				coroutine.Coroutine.AutoYieldCounter = 50000;
+				Coroutine coroutine = script.CreateCoroutine(script.Globals["Generate"]).Coroutine;
+				coroutine.AutoYieldCounter = 50000;
 
 				DynValue result = DynValue.NewYieldReq(null);
 				Stopwatch stopwatch = new Stopwatch();
 				stopwatch.Start();
 				while (result.Type == DataType.YieldRequest && !cts.IsCancellationRequested)
-					result = coroutine.Coroutine.Resume();
+					result = coroutine.Resume();
 
 				if (cts.IsCancellationRequested)
 					return Task.FromResult("generation timed out");
