@@ -47,7 +47,7 @@ namespace PR2_Level_Generator
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
 				SetLua("function Generate()\nend");
-				return ex.DecoratedMessage;
+				return "Lua error: " + ex.DecoratedMessage;
 			}
 
 			return null;
@@ -117,7 +117,7 @@ namespace PR2_Level_Generator
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
-				return Task.FromResult(ex.DecoratedMessage);
+				return Task.FromResult("Lua error: " + ex.DecoratedMessage);
 			}
 		}
 
