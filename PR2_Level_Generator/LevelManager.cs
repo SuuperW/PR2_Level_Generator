@@ -97,21 +97,21 @@ namespace PR2_Level_Generator
 
 			return json;
 		}
-		public ILevelGenerator LoadSettings(string path)
+		public string LoadSettings(string path)
 		{
 			if (!File.Exists(path))
 			{
 				Console.WriteLine("Failed to load settings; file does not exist.");
-				return null;
+				return "could not find config file";
 			}
 
 			string str = File.ReadAllText(path);
 			JObject json = JObject.Parse(str);
 			// Fail if the json contents don't exactly match what is expected.
 			if (json.Count != 3)
-				return null;
+				return "invalid config";
 			if (json["Generator Type"] == null || json["Generator Params"] == null || json["Map Settings"] == null)
-				return null;
+				return "invalid config";
 
 			Type t = Type.GetType(json["Generator Type"].ToString());
 			ILevelGenerator oldGen = generator;
@@ -121,21 +121,23 @@ namespace PR2_Level_Generator
 				if (File.Exists(filePath))
 				{
 					LuaGenerator luaGenerator = new LuaGenerator();
-					luaGenerator.SetLua(File.ReadAllText(filePath));
+					string result = luaGenerator.SetLua(File.ReadAllText(filePath));
+					if (result != null)
+						return "Lua error: " + result;
 					generator = luaGenerator;
 				}
 				else
-					return null;
+					return "could not find lua file";
 			}
 			else
 				generator = Activator.CreateInstance(t) as ILevelGenerator;
 
-			bool fail = false;
+			string ret = null;
 			foreach (JProperty j in json["Generator Params"])
 			{
 				if (!SetParamOrSetting(j.Name, j.Value.ToString()))
 				{
-					fail = true;
+					ret = "could not set param '" + j.Name + "'";
 					break;
 				}
 			}
@@ -143,18 +145,14 @@ namespace PR2_Level_Generator
 			{
 				if (!Map.SetSetting(j.Name, j.Value.ToString()))
 				{
-					fail = true;
+					ret = "could not set setting '" + j.Name + "'";
 					break;
 				}
 			}
 
-			if (fail)
-			{
+			if (ret != null)
 				generator = oldGen;
-				return null;
-			}
-			else
-				return generator;
+			return ret;
 		}
 
 		public bool SetParamOrSetting(string name, string value)

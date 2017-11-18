@@ -434,9 +434,11 @@ namespace LevelGenBot
 			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
 			GenerationManager generationManager = new GenerationManager();
 			generationManager.luaPath = luaPath;
-			if (generationManager.LoadSettings(filePath) == null)
+			string result = generationManager.LoadSettings(filePath);
+			if (result != null)
 			{
-				await SendInvalidConfigMesage(msg, args[1]);
+				await SendMessage(msg.Channel, msg.Author.Mention + ", " +
+				  "config `" + args[1] + "` failed to load. Reason: `" + result + "`\n");
 				return false;
 			}
 			generationManager.username = pr2_username;
@@ -556,12 +558,6 @@ namespace LevelGenBot
 			}
 
 			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
-			GenerationManager generationManager = new GenerationManager();
-			if (generationManager.LoadSettings(filePath) == null)
-			{
-				await SendInvalidConfigMesage(msg, args[1]);
-				return false;
-			}
 
 			await GetAndSendFile(filePath, ".txt", msg, args.Contains("text"));
 			return true;
@@ -685,12 +681,6 @@ namespace LevelGenBot
 
 			gen.Map.SetSetting("credits", gen.Map.GetSetting("credits") + " [" + userID.ToString() + "]");
 			return null;
-		}
-		private async Task SendInvalidConfigMesage(SocketMessage msg, string configName)
-		{
-			await SendMessage(msg.Channel, msg.Author.Mention + ", " +
-			  "`" + configName + "` is not a recognized config file or is corrupt.\n" +
-			  "To view a list of the available configs, use the command `config_list`.");
 		}
 
 		private async Task<bool> GetLuaScriptList(SocketMessage msg, params string[] args)
