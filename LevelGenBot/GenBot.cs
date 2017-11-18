@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -455,11 +456,21 @@ namespace LevelGenBot
 			MapLE map = generationManager.generator.Map;
 			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username +
 			  "#" + msg.Author.Discriminator + "]");
-			bool success = generationManager.generator.GenerateMap(new System.Threading.CancellationTokenSource(1000)).Result;
+			CancellationTokenSource cts = new CancellationTokenSource(1000);
+			bool success = generationManager.generator.GenerateMap(cts).Result;
 			if (!success)
 			{
-				await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level took too long to generate.\n" +
-				  "If this happens regularly with this config, please edit the config to make the levels smaller.");
+				await sendingGenerateMessage;
+				if (cts.IsCancellationRequested)
+				{
+					await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level took too long to generate.\n" +
+					  "If this happens regularly with this config, please edit the config to make the levels smaller.");
+				}
+				else
+				{
+					await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level failed to generate. " +
+					  "If you used a Lua script, please ensure that the Generate function returns true.");
+				}
 				return false;
 			}
 
