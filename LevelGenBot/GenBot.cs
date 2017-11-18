@@ -564,28 +564,7 @@ namespace LevelGenBot
 			}
 
 			bool getFile = !args.Contains("text");
-			string messageStr = msg.Author.Mention + ", here is the '" + args[1] + "' config file.";
-			if (!getFile)
-			{
-				string fileStr = generationManager.GetSaveObject().ToString();
-				messageStr = msg.Author.Mention + ", here are the settings for config '" +
-				  args[1] + "'.\n```" + fileStr + "```";
-				if (messageStr.Length < 2000)
-					await SendMessage(msg.Channel, messageStr);
-				else
-				{
-					getFile = true;
-					messageStr = msg.Author.Mention + ", the contents of the '" + args[1] +
-					  "' config file are too large to post in a Discord message, so here is the file.";
-				}
-			}
-
-			if (getFile)
-			{
-				FileStream stream = new FileStream(filePath, FileMode.Open);
-				string uploadFileName = Path.GetFileNameWithoutExtension(filePath) + ".txt";
-				await SendFile(msg.Channel, stream, uploadFileName, messageStr);
-			}
+			await GetAndSendFile(filePath, ".txt", msg, getFile);
 			return true;
 		}
 		private string GetFilePath(ulong userID, string fileName, string basePath)
@@ -600,6 +579,31 @@ namespace LevelGenBot
 				return null;
 
 			return filePath;
+		}
+		private async Task GetAndSendFile(string filePath, string extension, SocketMessage msg, bool asText)
+		{
+			string messageStr = msg.Author.Mention + ", here is the file.";
+			if (asText)
+			{
+				string fileStr = File.ReadAllText(filePath);
+				messageStr = msg.Author.Mention + ", here are the contents of '" +
+				  filePath + extension + "'.\n```" + fileStr + "```";
+				if (messageStr.Length < 2000)
+					await SendMessage(msg.Channel, messageStr);
+				else
+				{
+					asText = false;
+					messageStr = msg.Author.Mention + ", the contents of '" + filePath + extension +
+					  "' are too large to post in a Discord message, so here is the file.";
+				}
+			}
+
+			if (!asText)
+			{
+				FileStream stream = new FileStream(filePath, FileMode.Open);
+				string uploadFileName = Path.GetFileNameWithoutExtension(filePath) + extension;
+				await SendFile(msg.Channel, stream, uploadFileName, messageStr);
+			}
 		}
 
 		private async Task<bool> SetConfigFile(SocketMessage msg, params string[] args)
@@ -750,28 +754,7 @@ namespace LevelGenBot
 			string filePath = GetFilePath(msg.Author.Id, args[1], luaPath);
 
 			bool getFile = !args.Contains("text");
-			string messageStr = msg.Author.Mention + ", here is the '" + args[1] + "' lua script.";
-			if (!getFile)
-			{
-				string fileStr = File.ReadAllText(filePath);
-				messageStr = msg.Author.Mention + ", here are the contents of '" +
-				  args[1] + "'.\n```" + fileStr + "```";
-				if (messageStr.Length < 2000)
-					await SendMessage(msg.Channel, messageStr);
-				else
-				{
-					getFile = true;
-					messageStr = msg.Author.Mention + ", the contents of the file '" + args[1] +
-					  "' are too large to post in a Discord message, so here is the file itself.";
-				}
-			}
-
-			if (getFile)
-			{
-				FileStream stream = new FileStream(filePath, FileMode.Open);
-				string uploadFileName = Path.GetFileNameWithoutExtension(filePath);
-				await SendFile(msg.Channel, stream, uploadFileName, messageStr);
-			}
+			await GetAndSendFile(filePath, ".lua", msg, getFile);
 			return true;
 		}
 
@@ -865,8 +848,7 @@ namespace LevelGenBot
 
 			Attachment a = msg.Attachments.First();
 			string fileName = Path.Combine(configsPath, a.Filename.Replace("../", "")); // .Replace for security
-			if (fileName.EndsWith(".txt"))
-				fileName = fileName.Substring(0, fileName.Length - 4);
+			fileName = Path.GetFileNameWithoutExtension(fileName);
 			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(configsPath).FullName)
 			{
 				await SendMessage(msg.Channel, msg.Author.Mention + ", there seems to be something wonky with your file name.");
