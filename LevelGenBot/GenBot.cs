@@ -607,7 +607,7 @@ namespace LevelGenBot
 
 		private async Task<bool> SetConfigFile(SocketMessage msg, params string[] args)
 		{
-			string fileName = await FileNameFromAttachment(msg);
+			string fileName = await FileNameFromAttachment(msg, configsPath);
 			if (fileName == null)
 				return false; // FileNameFromAttachment will send the user an error message, if appropriate.
 
@@ -702,7 +702,7 @@ namespace LevelGenBot
 		}
 		private async Task<bool> SetLuaScript(SocketMessage msg, params string[] args)
 		{
-			string fileName = await FileNameFromAttachment(msg);
+			string fileName = await FileNameFromAttachment(msg, luaPath);
 			if (fileName == null)
 				return false; // FileNameFromAttachment will send the user an error message, if appropriate.
 
@@ -836,7 +836,7 @@ namespace LevelGenBot
 
 		#endregion
 
-		private async Task<string> FileNameFromAttachment(SocketMessage msg)
+		private async Task<string> FileNameFromAttachment(SocketMessage msg, string basePath)
 		{
 			if (msg.Attachments.Count != 1)
 			{
@@ -845,9 +845,9 @@ namespace LevelGenBot
 			}
 
 			Attachment a = msg.Attachments.First();
-			string fileName = Path.Combine(configsPath, a.Filename.Replace("../", "")); // .Replace for security
-			fileName = Path.GetFileNameWithoutExtension(fileName);
-			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(configsPath).FullName)
+			string fileName = Path.Combine(basePath, a.Filename.Replace("../", "")); // .Replace for security
+			fileName = Path.ChangeExtension(fileName, null);
+			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(basePath).FullName)
 			{
 				await SendMessage(msg.Channel, msg.Author.Mention + ", there seems to be something wonky with your file name.");
 				return null;
