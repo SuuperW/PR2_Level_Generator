@@ -583,17 +583,18 @@ namespace LevelGenBot
 		private async Task GetAndSendFile(string filePath, string extension, SocketMessage msg, bool asText)
 		{
 			string messageStr = msg.Author.Mention + ", here is the file.";
+			string fileName = Path.GetFileNameWithoutExtension(filePath) + extension;
 			if (asText)
 			{
 				string fileStr = File.ReadAllText(filePath);
-				messageStr = msg.Author.Mention + ", here are the contents of '" +
-				  filePath + extension + "'.\n```" + fileStr + "```";
+				messageStr = msg.Author.Mention + ", here are the contents of `" +
+				  fileName + "`.\n```" + (extension == ".lua" ? "lua\n": "") + fileStr + "```";
 				if (messageStr.Length < 2000)
 					await SendMessage(msg.Channel, messageStr);
 				else
 				{
 					asText = false;
-					messageStr = msg.Author.Mention + ", the contents of '" + filePath + extension +
+					messageStr = msg.Author.Mention + ", the contents of '" + fileName +
 					  "' are too large to post in a Discord message, so here is the file.";
 				}
 			}
@@ -601,8 +602,7 @@ namespace LevelGenBot
 			if (!asText)
 			{
 				FileStream stream = new FileStream(filePath, FileMode.Open);
-				string uploadFileName = Path.GetFileNameWithoutExtension(filePath) + extension;
-				await SendFile(msg.Channel, stream, uploadFileName, messageStr);
+				await SendFile(msg.Channel, stream, fileName, messageStr);
 			}
 		}
 
