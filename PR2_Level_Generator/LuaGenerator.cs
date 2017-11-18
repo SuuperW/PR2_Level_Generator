@@ -9,7 +9,7 @@ using MoonSharp.Interpreter;
 
 namespace PR2_Level_Generator
 {
-	public class LuaGenerator : ILuaGenerator
+	public class LuaGenerator : ILevelGenerator
 	{
 		public MapLE Map { get; set; }
 		public int LastSeed { get; } = 0;
@@ -96,16 +96,22 @@ namespace PR2_Level_Generator
 			return parameters[paramName].ToString();
 		}
 
-		public void SetParamValue(string paramName, string value)
+		public bool SetParamValue(string paramName, string value)
 		{
-			parameters[paramName] = DynValue.FromObject(script, value);
+			if (parameters.ContainsKey(paramName))
+			{
+				parameters[paramName] = DynValue.FromObject(script, value);
+				return true;
+			}
+			else
+				return false;
 		}
 
-		public Task<string> GenerateMap(CancellationTokenSource cts)
+		public Task<bool> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
 			// TODO: implement a time-out via the CancellationTokenSource
-			return Task.FromResult(script.Call(script.Globals["Generate"]).ToString());
+			return Task.FromResult(script.Call(script.Globals["Generate"]).Boolean);
 		}
 
 		public string GetSaveString()
