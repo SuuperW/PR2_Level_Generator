@@ -563,8 +563,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			bool getFile = !args.Contains("text");
-			await GetAndSendFile(filePath, ".txt", msg, getFile);
+			await GetAndSendFile(filePath, ".txt", msg, args.Contains("text"));
 			return true;
 		}
 		private string GetFilePath(ulong userID, string fileName, string basePath)
@@ -753,8 +752,7 @@ namespace LevelGenBot
 
 			string filePath = GetFilePath(msg.Author.Id, args[1], luaPath);
 
-			bool getFile = !args.Contains("text");
-			await GetAndSendFile(filePath, ".lua", msg, getFile);
+			await GetAndSendFile(filePath, ".lua", msg, args.Contains("text"));
 			return true;
 		}
 
