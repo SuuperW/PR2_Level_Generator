@@ -23,6 +23,7 @@ namespace LevelGenBot
 		string pr2_username;
 		string pr2_token;
 		const string configsPath = "GenConfigs";
+		const string luaPath = "lua";
 		const string outputPath = "files/output.xml";
 		const string errorPath = "files/error.txt";
 		int loggingLevel;
@@ -68,6 +69,7 @@ namespace LevelGenBot
 			Directory.CreateDirectory("temp");
 
 			Directory.CreateDirectory(configsPath);
+			Directory.CreateDirectory(luaPath);
 		}
 
 		public event Action Connected;
@@ -427,6 +429,7 @@ namespace LevelGenBot
 
 			string filePath = GetConfigPath(msg.Author.Id, args[1]);
 			GenerationManager generationManager = new GenerationManager();
+			generationManager.luaPath = luaPath;
 			if (generationManager.LoadSettings(filePath) == null)
 			{
 				await SendInvalidConfigMesage(msg, args[1]);
