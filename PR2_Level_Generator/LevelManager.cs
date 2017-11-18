@@ -14,6 +14,7 @@ namespace PR2_Level_Generator
 	{
 		public string login_token;
 		public string username;
+		public string luaPath = "lua";
 
 		public ILevelGenerator generator;
 		private MapLE Map { get => generator.Map; }
@@ -114,7 +115,20 @@ namespace PR2_Level_Generator
 
 			Type t = Type.GetType(json["Generator Type"].ToString());
 			ILevelGenerator oldGen = generator;
-			generator = Activator.CreateInstance(t) as ILevelGenerator;
+			if (t == null) // Check if it is an existing lua script.
+			{
+				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString());
+				if (File.Exists(filePath))
+				{
+					LuaGenerator luaGenerator = new LuaGenerator();
+					luaGenerator.SetLua(File.ReadAllText(filePath));
+					generator = luaGenerator;
+				}
+				else
+					return null;
+			}
+			else
+				generator = Activator.CreateInstance(t) as ILevelGenerator;
 
 			bool fail = false;
 			foreach (JProperty j in json["Generator Params"])
