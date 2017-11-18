@@ -696,7 +696,7 @@ namespace LevelGenBot
 
 		private async Task<bool> GetLuaScriptList(SocketMessage msg, params string[] args)
 		{
-			string message = "Here is a list of all available lua scripts:\n" + GetFilesList(configsPath, msg.Author.Id);
+			string message = "Here is a list of all available lua scripts:\n" + GetFilesList(luaPath, msg.Author.Id);
 
 			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), message);
 			return true;
