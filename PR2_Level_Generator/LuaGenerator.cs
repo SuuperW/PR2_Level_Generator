@@ -25,9 +25,26 @@ namespace PR2_Level_Generator
 			script = new Script(CoreModules.Preset_HardSandbox);
 			parameters = new SortedDictionary<string, DynValue>();
 			ExposeFunctions();
-			try {
-				script.DoString(_luaScript); }
-			catch (ScriptRuntimeException ex)
+			try
+			{
+				// Wrap the code in a function, so that MoonSharp can use it as a coroutine.
+				string codeToRun = "function Initialize()\n" + _luaScript + "\n" +
+					"_G.Generate = Generate;\nend";
+				script.DoString(codeToRun);
+				DynValue initFunction = script.Globals.Get("Initialize");
+				DynValue coroutine = script.CreateCoroutine(initFunction);
+				coroutine.Coroutine.AutoYieldCounter = 100;
+
+				int count = 0;
+				DynValue result = coroutine.Coroutine.Resume();
+				while (result.Type == DataType.YieldRequest)
+				{
+					// TODO: actually time this
+					result = coroutine.Coroutine.Resume();
+					count++;
+				}
+			}
+			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
 				SetLua("function Generate()\nend");
 				return ex.DecoratedMessage;
@@ -81,13 +98,26 @@ namespace PR2_Level_Generator
 
 		public void SetParamValue(string paramName, string value)
 		{
-			parameters[paramName] = DynValue.FromObject(script, value); // this probably doesn't work
+			parameters[paramName] = DynValue.FromObject(script, value);
 		}
 
 		public Task<string> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
+			// TODO: implement a time-out via the CancellationTokenSource
 			return Task.FromResult(script.Call(script.Globals["Generate"]).ToString());
+		}
+
+		public string GetSaveString()
+		{
+			StringBuilder ret = new StringBuilder();
+			ret.Append(this.GetType().ToString());
+			foreach (KeyValuePair<string, DynValue> kvp in parameters)
+			{
+				ret.Append("\n" + kvp.Key + ":" + kvp.Value.ToString());
+			}
+
+			return ret.ToString();
 		}
 	}
 }

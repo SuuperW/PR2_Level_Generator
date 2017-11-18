@@ -18,5 +18,7 @@ namespace PR2_Level_Generator
 
 		Task<string> GenerateMap(CancellationTokenSource cts);
 
+		string GetSaveString();
+
 	}
 }
