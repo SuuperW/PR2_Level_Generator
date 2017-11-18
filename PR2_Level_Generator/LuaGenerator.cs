@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 using MoonSharp.Interpreter;
 
@@ -33,16 +34,11 @@ namespace PR2_Level_Generator
 				script.DoString(codeToRun);
 				DynValue initFunction = script.Globals.Get("Initialize");
 				DynValue coroutine = script.CreateCoroutine(initFunction);
-				coroutine.Coroutine.AutoYieldCounter = 100;
+				coroutine.Coroutine.AutoYieldCounter = 100000;
 
-				int count = 0;
 				DynValue result = coroutine.Coroutine.Resume();
-				while (result.Type == DataType.YieldRequest)
-				{
-					// TODO: actually time this
-					result = coroutine.Coroutine.Resume();
-					count++;
-				}
+				if (result.Type == DataType.YieldRequest)
+					return "initialization timed out";
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
@@ -112,8 +108,20 @@ namespace PR2_Level_Generator
 			Map.ClearBlocks();
 			try
 			{
-				// TODO: implement a time-out via the CancellationTokenSource
-				return Task.FromResult(script.Call(script.Globals["Generate"]).String);
+				DynValue coroutine = script.CreateCoroutine(script.Globals["Generate"]);
+				coroutine.Coroutine.AutoYieldCounter = 50000;
+
+				DynValue result = DynValue.NewYieldReq(null);
+				Stopwatch stopwatch = new Stopwatch();
+				stopwatch.Start();
+				while (result.Type == DataType.YieldRequest && !cts.IsCancellationRequested)
+					result = coroutine.Coroutine.Resume();
+
+				if (cts.IsCancellationRequested)
+					return Task.FromResult("generation timed out");
+
+				Console.WriteLine("Level generated in " + stopwatch.ElapsedMilliseconds + "ms");
+				return Task.FromResult(result.String);
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
