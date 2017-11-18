@@ -12,7 +12,7 @@ namespace PR2_Level_Generator
 		MapLE Map { get; }
 
 		int LastSeed { get; }
-		Task<bool> GenerateMap(CancellationTokenSource cts);
+		Task<string> GenerateMap(CancellationTokenSource cts);
 
 		string GetSaveString();
 	}

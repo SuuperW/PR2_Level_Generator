@@ -171,14 +171,14 @@ namespace PR2_Level_Generator
 
 		CancellationTokenSource cts;
 
-        public Task<bool> GenerateMap(CancellationTokenSource cts)
+        public Task<string> GenerateMap(CancellationTokenSource cts)
         {
 			this.cts = cts;
 
 			if (Sq_Size > 1000 || Size > 100000)
 			{
 				Console.WriteLine("GenMaze will not generate mazes that large!");
-				return Task.FromResult(true); // true because it was not cancelled
+				return Task.FromResult("too big");
 			}
 
             int rSeed = Seed;
@@ -192,14 +192,14 @@ namespace PR2_Level_Generator
 
             Generate();
 			if (cts.IsCancellationRequested)
-				return Task.FromResult(false);
+				return Task.FromResult("generation timed out");
 
             // Add the stuff onto DataStr (m3, BG, etc.)
             Map.BGC = 0x00111111;
             Map.artCodes[8] = ArtStr;
 
             Console.WriteLine("Map Generated");
-			return Task.FromResult(true);
+			return Task.FromResult<string>(null);
         }
 
         private void Generate()

@@ -462,8 +462,8 @@ namespace LevelGenBot
 			map.SetSetting("title", map.GetSetting("title") + " [" + msg.Author.Username +
 			  "#" + msg.Author.Discriminator + "]");
 			CancellationTokenSource cts = new CancellationTokenSource(1000);
-			bool success = generationManager.generator.GenerateMap(cts).Result;
-			if (!success)
+			result = generationManager.generator.GenerateMap(cts).Result;
+			if (result != null)
 			{
 				await sendingGenerateMessage;
 				if (cts.IsCancellationRequested)
@@ -474,7 +474,7 @@ namespace LevelGenBot
 				else
 				{
 					await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level failed to generate. " +
-					  "If you used a Lua script, please ensure that the Generate function returns true.");
+					  "Reason: `" + result + "`");
 				}
 				return false;
 			}

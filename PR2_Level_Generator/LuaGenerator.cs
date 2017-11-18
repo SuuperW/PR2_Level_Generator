@@ -107,11 +107,18 @@ namespace PR2_Level_Generator
 				return false;
 		}
 
-		public Task<bool> GenerateMap(CancellationTokenSource cts)
+		public Task<string> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
-			// TODO: implement a time-out via the CancellationTokenSource
-			return Task.FromResult(script.Call(script.Globals["Generate"]).Boolean);
+			try
+			{
+				// TODO: implement a time-out via the CancellationTokenSource
+				return Task.FromResult(script.Call(script.Globals["Generate"]).String);
+			}
+			catch (InterpreterException ex) // base exception type for MoonSharp
+			{
+				return Task.FromResult(ex.DecoratedMessage);
+			}
 		}
 
 		public string GetSaveString()

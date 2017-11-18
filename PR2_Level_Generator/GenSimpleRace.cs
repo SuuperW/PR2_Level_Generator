@@ -114,7 +114,7 @@ namespace PR2_Level_Generator
 
         System.Diagnostics.Stopwatch t = new System.Diagnostics.Stopwatch();
         public int LastSeed { get; private set; }
-        public Task<bool> GenerateMap(CancellationTokenSource cts)
+        public Task<string> GenerateMap(CancellationTokenSource cts)
         {
             t.Restart();
 			this.cts = cts;
@@ -154,7 +154,7 @@ namespace PR2_Level_Generator
                 PlaceMetaBlocks(x, openFromLeft);
 
 				if (cts.IsCancellationRequested)
-					return Task.FromResult(false);
+					return Task.FromResult("generation timed out");
             }
 
             // Clean up meta blocks
@@ -165,12 +165,12 @@ namespace PR2_Level_Generator
                 BlockTraps();
 
 			if (cts.IsCancellationRequested)
-				return Task.FromResult(false);
+				return Task.FromResult("generation timed out");
 
             t.Stop();
             Console.WriteLine("Map Generated. [" + (t.ElapsedMilliseconds / 1000.0) + "s]");
 
-			return Task.FromResult(true);
+			return Task.FromResult<string>(null);
         }
 
         private void PlaceBordersAndEnds()
