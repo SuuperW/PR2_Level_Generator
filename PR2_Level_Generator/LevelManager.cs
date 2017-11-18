@@ -117,7 +117,7 @@ namespace PR2_Level_Generator
 			ILevelGenerator oldGen = generator;
 			if (t == null) // Check if it is an existing lua script.
 			{
-				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString());
+				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString().Replace("../", "")); // disallow ../ for security reasons
 				if (File.Exists(filePath))
 				{
 					LuaGenerator luaGenerator = new LuaGenerator();
