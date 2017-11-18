@@ -93,7 +93,7 @@ namespace PR2_Level_Generator
 
 		public string GetParamValue(string paramName)
 		{
-			return parameters[paramName].ToString();
+			return parameters[paramName].CastToString();
 		}
 
 		public bool SetParamValue(string paramName, string value)
