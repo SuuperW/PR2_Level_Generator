@@ -351,6 +351,9 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("get_config", new BotCommand(GetConfigFile, 5));
 			everybodyBotCommands.Add("set_config", new BotCommand(SetConfigFile, 5));
 			everybodyBotCommands.Add("delete_config", new BotCommand(DeleteConfigFile));
+			everybodyBotCommands.Add("set_lua_script", new BotCommand(SetLuaScript, 5));
+			everybodyBotCommands.Add("get_lua_script", new BotCommand(GetLuaScript, 5));
+			everybodyBotCommands.Add("lua_script_list", new BotCommand(GetLuaScriptList));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
 			//trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
@@ -428,7 +431,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string filePath = GetConfigPath(msg.Author.Id, args[1]);
+			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
 			GenerationManager generationManager = new GenerationManager();
 			generationManager.luaPath = luaPath;
 			if (generationManager.LoadSettings(filePath) == null)
@@ -522,20 +525,26 @@ namespace LevelGenBot
 		}
 		private async Task<bool> SendConfigsListMessage(SocketMessage msg, params string[] args)
 		{
-			IEnumerable<string> filesList = Directory.EnumerateFiles(configsPath, "*", SearchOption.TopDirectoryOnly);
-			StringBuilder configsList = new StringBuilder("Here is a list of all available configs:\n```\n");
-			foreach (string file in filesList)
-				configsList.Append(new FileInfo(file).Name + "\n");
+			string message = "Here is a list of all available configs:\n" + GetFilesList(configsPath, msg.Author.Id);
 
-			string privateConfigs = Path.Combine(configsPath, msg.Author.Id.ToString());
-			Directory.CreateDirectory(privateConfigs);
-			filesList = Directory.EnumerateFiles(privateConfigs, "*", SearchOption.TopDirectoryOnly);
-			foreach (string file in filesList)
-				configsList.Append("me/" + new FileInfo(file).Name + "\n");
-			configsList.Append("```");
-
-			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), configsList.ToString());
+			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), message);
 			return true;
+		}
+		private string GetFilesList(string path, ulong userID)
+		{
+			IEnumerable<string> filesList = Directory.EnumerateFiles(path, "*", SearchOption.TopDirectoryOnly);
+			StringBuilder fileList = new StringBuilder("```\n");
+			foreach (string file in filesList)
+				fileList.Append(new FileInfo(file).Name + "\n");
+
+			string privateFiles = Path.Combine(path, userID.ToString());
+			Directory.CreateDirectory(privateFiles);
+			filesList = Directory.EnumerateFiles(privateFiles, "*", SearchOption.TopDirectoryOnly);
+			foreach (string file in filesList)
+				fileList.Append("me/" + new FileInfo(file).Name + "\n");
+			fileList.Append("```");
+
+			return fileList.ToString();
 		}
 
 		private async Task<bool> GetConfigFile(SocketMessage msg, params string[] args)
@@ -546,7 +555,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string filePath = GetConfigPath(msg.Author.Id, args[1]);
+			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
 			GenerationManager generationManager = new GenerationManager();
 			if (generationManager.LoadSettings(filePath) == null)
 			{
@@ -579,15 +588,15 @@ namespace LevelGenBot
 			}
 			return true;
 		}
-		private string GetConfigPath(ulong userID, string configName)
+		private string GetFilePath(ulong userID, string fileName, string basePath)
 		{
-			configName = configName.Replace("../", ""); // Security
-			if (configName.StartsWith("me/"))
-				configName = userID + configName.Substring(2);
+			fileName = fileName.Replace("../", ""); // Security
+			if (fileName.StartsWith("me/"))
+				fileName = userID + fileName.Substring(2);
 
-			string filePath = Path.Combine(configsPath, configName);
+			string filePath = Path.Combine(basePath, fileName);
 			// ensure the file we're getting is inside the configs directory
-			if (!new DirectoryInfo(filePath).FullName.StartsWith(new DirectoryInfo(configsPath).FullName))
+			if (!new DirectoryInfo(filePath).FullName.StartsWith(new DirectoryInfo(basePath).FullName))
 				return null;
 
 			return filePath;
@@ -681,6 +690,91 @@ namespace LevelGenBot
 			  "To view a list of the available configs, use the command `config_list`.");
 		}
 
+		private async Task<bool> GetLuaScriptList(SocketMessage msg, params string[] args)
+		{
+			string message = "Here is a list of all available lua scripts:\n" + GetFilesList(configsPath, msg.Author.Id);
+
+			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), message);
+			return true;
+		}
+		private async Task<bool> SetLuaScript(SocketMessage msg, params string[] args)
+		{
+			string fileName = await FileNameFromAttachment(msg);
+			if (fileName == null)
+				return false; // FileNameFromAttachment will send the user an error message, if appropriate.
+
+			string str = await GetAttachmentString(msg.Attachments.First());
+			if (str.Length > 0x8000)
+			{
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua file you provided is too big.");
+				return false;
+			}
+
+			LuaGenerator luaGenerator = new LuaGenerator();
+			string result = luaGenerator.SetLua(str);
+			if (result != null)
+			{
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua file you provided is invalid. Details: `" + result + "`");
+				return false;
+			}
+
+			if (!specialUsers.IsUserTrusted(msg.Author.Id) || !args.Contains("public"))
+			{
+				string dir = Path.Combine(Directory.GetParent(fileName).FullName, msg.Author.Id.ToString());
+				fileName = Path.Combine(dir, new FileInfo(fileName).Name);
+				if (!Directory.Exists(dir))
+					Directory.CreateDirectory(dir);
+			}
+
+			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
+			{
+				await SendMessage(msg.Channel, msg.Author.Mention + ", you have too many saved configs. " +
+				  "Please delete one before uploading any more.");
+				return false;
+			}
+
+			File.WriteAllText(fileName, str);
+			await SendMessage(msg.Channel, msg.Author.Mention + ", lua script '" +
+			  msg.Attachments.First().Filename + "' has been saved.");
+
+			return true;
+		}
+		private async Task<bool> GetLuaScript(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await SendMessage(msg.Channel, "You didn't specify a lua script to get, silly " + msg.Author.Mention + "!");
+				return false;
+			}
+
+			string filePath = GetFilePath(msg.Author.Id, args[1], luaPath);
+
+			bool getFile = !args.Contains("text");
+			string messageStr = msg.Author.Mention + ", here is the '" + args[1] + "' lua script.";
+			if (!getFile)
+			{
+				string fileStr = File.ReadAllText(filePath);
+				messageStr = msg.Author.Mention + ", here are the contents of '" +
+				  args[1] + "'.\n```" + fileStr + "```";
+				if (messageStr.Length < 2000)
+					await SendMessage(msg.Channel, messageStr);
+				else
+				{
+					getFile = true;
+					messageStr = msg.Author.Mention + ", the contents of the file '" + args[1] +
+					  "' are too large to post in a Discord message, so here is the file itself.";
+				}
+			}
+
+			if (getFile)
+			{
+				FileStream stream = new FileStream(filePath, FileMode.Open);
+				string uploadFileName = Path.GetFileNameWithoutExtension(filePath);
+				await SendFile(msg.Channel, stream, uploadFileName, messageStr);
+			}
+			return true;
+		}
+
 		private async Task<bool> DeleteConfigFile(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
@@ -695,7 +789,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string filePath = GetConfigPath(msg.Author.Id, args[1]);
+			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
 			if (File.Exists(filePath))
 				File.Delete(filePath);
 
