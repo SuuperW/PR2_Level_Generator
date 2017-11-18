@@ -32,19 +32,25 @@ namespace PR2_Level_Generator
 			parameters.Keys.CopyTo(ret, 0);
 			return ret;
 		}
-		public double GetParamValue(string name)
+		public string GetParamValue(string name)
 		{
 			if (parameters.ContainsKey(name))
-				return parameters[name];
+				return parameters[name].ToString();
 			else
 			{
 				Console.WriteLine("Parameter '" + name + "' not found.");
-				return double.NaN;
+				return double.NaN.ToString();
 			}
 		}
-		public void SetParamValue(string name, double value)
+		public bool SetParamValue(string name, string value)
 		{
-			parameters[name] = value;
+			if (double.TryParse(value, out double v))
+			{
+				parameters[name] = v;
+				return true;
+			}
+			else
+				return false;
 		}
 
         public int Length

@@ -6,8 +6,8 @@ namespace PR2_Level_Generator
 	public interface ILevelGenerator
 	{
 		string[] GetParamNames();
-		double GetParamValue(string paramName);
-		void SetParamValue(string paramName, double value);
+		string GetParamValue(string paramName);
+		bool SetParamValue(string paramName, string value);
 
 		MapLE Map { get; }
 

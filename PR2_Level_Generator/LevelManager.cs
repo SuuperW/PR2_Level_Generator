@@ -48,11 +48,11 @@ namespace PR2_Level_Generator
 		private string SetLevelNote()
 		{
 			// Append parameters to the note.
-			double? oldSeed = null;
+			string oldSeed = null;
 			if (generator.GetParamNames().Contains("Seed"))
 			{
 				oldSeed = generator.GetParamValue("seed");
-				generator.SetParamValue("seed", generator.LastSeed);
+				generator.SetParamValue("seed", generator.LastSeed.ToString());
 			}
 
 			string oldNote = Map.GetSetting("note");
@@ -60,7 +60,7 @@ namespace PR2_Level_Generator
 				GetSaveObject()["Generator Params"].ToString().Replace("\r\n", "\n").Replace(" ", ""));
 
 			if (oldSeed != null)
-				generator.SetParamValue("seed", oldSeed.Value);
+				generator.SetParamValue("seed", oldSeed);
 
 			return oldNote;
 		}
@@ -150,15 +150,13 @@ namespace PR2_Level_Generator
 				return Map.SetSetting(name, value);
 			else
 			{
-				double val;
-				if (double.TryParse(value, out val))
-					generator.SetParamValue(name, val);
-				else
+				if (!generator.SetParamValue(name, value))
 				{
 					Console.WriteLine("Value \'" + value + "\' could not be parsed.");
 					return false;
 				}
-				return true;
+				else
+					return true;
 			}
 		}
 
@@ -173,7 +171,7 @@ namespace PR2_Level_Generator
 		}
 
 
-		private async Task<string> PostLoadHTTP(string url, string postData)
+		private async Task<string> PostLoadHTTP(string url, string postData) // temp public
 		{
 			byte[] byteArray = Encoding.UTF8.GetBytes(postData);
 
