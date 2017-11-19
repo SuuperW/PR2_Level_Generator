@@ -354,6 +354,7 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("set_lua_script", new BotCommand(SetLuaScript, 5));
 			everybodyBotCommands.Add("get_lua_script", new BotCommand(GetLuaScript, 5));
 			everybodyBotCommands.Add("lua_script_list", new BotCommand(GetLuaScriptList));
+			everybodyBotCommands.Add("delete_lua_script", new BotCommand(DeleteLuaScript));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
 			//trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
@@ -614,6 +615,7 @@ namespace LevelGenBot
 				return false;
 			}
 
+			str.Replace("\"Generator Type\": \"me/", "\"Generator Type\": \"" + msg.Author.Id + "/");
 			string tempFileName = GetTempFileName();
 			File.WriteAllText(tempFileName, str);
 
@@ -732,6 +734,30 @@ namespace LevelGenBot
 			await GetAndSendFile(filePath, ".lua", msg, args.Contains("text"));
 			return true;
 		}
+		private async Task<bool> DeleteLuaScript(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await SendMessage(msg.Channel, "You didn't specify a lua script to delete, silly " +
+				  msg.Author.Mention + "!");
+				return false;
+			}
+			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
+			{
+				await SendMessage(msg.Channel, msg.Author.Mention + ", you may only delete your own configs.");
+				return false;
+			}
+
+			string filePath = GetFilePath(msg.Author.Id, args[1], luaPath);
+			if (File.Exists(filePath))
+			{
+				File.Delete(filePath);
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua script '" + args[1] + "' has been deleted.");
+			}
+			else
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua script `" + args[1] + "` does not exist.");
+			return true;
+		}
 
 		private async Task<bool> DeleteConfigFile(SocketMessage msg, params string[] args)
 		{
@@ -749,9 +775,12 @@ namespace LevelGenBot
 
 			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
 			if (File.Exists(filePath))
+			{
 				File.Delete(filePath);
-
-			await SendMessage(msg.Channel, msg.Author.Mention + ", the config '" + args[1] + "' has been deleted.");
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the config '" + args[1] + "' has been deleted.");
+			}
+			else
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the config `" + args[1] + "` does not exist.");
 			return true;
 		}
 
