@@ -1,19 +1,23 @@
 {
 	"_default": "This bot allows you to create pseudo-random 'procedurally generated' levels on Platform Racing 2. All levels generated with this bot will be uploaded to the account `@pr2acc`. You can search for levels by this user to see examples of the kinds of levels this bot can create. (Most levels will be password-proteced, but with a blank password. To play these levels, press 'Check' without typing in a password.)
 \nWhen sending a command to this bot via DMs, no prefix is required. To use this bot outside of DMs, prefix the command with a mention of this bot, e.g. `@me help`.
-\nSome commands require or allow parameters, in addition to just the command name. These should be separated by spaces. If a parameter includes a space, surround the parameter with quotation marks, e.g. `generate \"easy race\"`
+\nSome commands require or allow parameters, in addition to just the command name. These should be separated by spaces. If the parameter itself includes a space, surround the parameter with quotation marks, e.g. `generate \"easy race\"`
 \nFor a list of extra help topics, use the command `help_topics`. For a list of available commands, use the command `commands`.",
 
 	"_hello": "For details on how to use this bot, say `help`.",
 	
 	"_invalid_command": "Command not recognized. For a list of available commands, use the command `commands`.",
 
-	"generating": "Levels are generated with the help of a configuration (or 'config') file. These files include the parameters which the generator will use, as well as the map settings such as title, time limit, gravity, etc.
-\nTo generate a level, you must specify the name of a config file, e.g. `generate default`. To see a list of available config files, use the command `config_list`. For help creating your own config files, view the help topic `creating_configs`.",
+	"generating": "Levels are generated with the help of a configuration (or 'config') file. These files include the generator name, parameters which the generator will use, as well as the map settings such as title, time limit, gravity, etc.
+\nTo generate a level, you must specify the name of a config file, e.g. `generate default`. To see a list of available config files, use the command `config_list`. For help creating your own config files, view the help topic `creating_configs`.
+\nFor information on creating your own Lua script to generate levels, view the help topic `lua`.",
 
 	"generating_advanced": "It is possible to generate levels from a config file other Discord users have uploaded, if you know the user's ID and the name of the config file. To do this, prefix the name of the config file with the creating user's Discord ID and a slash. `generate [user_ID]/[config_name]`
-\nYou can also modify the config being used in the generate command by giving pair(s) of param/setting names and values after the config name. `generate default length 20 title example",
+\nYou can also modify the config being used in the generate command by giving pair(s) of param/setting names and values after the config name. `generate default length 20 title example`",
 
 	"creating_configs": "To create your own config file, first download a config file by using the `get_config [config_name]` command. To see the config file contents directly, rather than being given a file, append the `text` parameter to the command, e.g. `get_config default text`.
-\nOnce you have a config file, open it with a text editor and modify the params/settings values it contains. Then, save the file with whatever name you want your config to have. Finally, upload the file with a message using the command `set_config`. If your config file is valid, you will now be able to use it when generating levels by giving the config name as `me/[your_config's_name]` in the generate command. It will also show up in the list of available configs when you use the `config_list` command (with the required 'me/' included)."
+\nOnce you have a config file, open it with a text editor and modify the params/settings values it contains. Then, save the file with whatever name you want your config to have. Finally, upload the file with a message using the command `set_config`. If your config file is valid, you will now be able to use it when generating levels by giving the config name as `me/[your_config's_name]` in the generate command. It will also show up in the list of available configs when you use the `config_list` command (with the required 'me/' included).",
+
+	"lua": "This bot can use a Lua script to generate levels. To set a config file to use a Lua script, set its `Generator Type` to the name of the Lua script. You can upload your own Lua scripts using the `set_lua_script` command. When creating a config file to use a Lua script you have uploaded, ensure that the Generator Type includes `me/`, to match the name given by the `lua_script_list` command. (The bot will replace the 'me' with your Discord ID, which will also work.)
+\nFor example config and Lua scripts, use `get_config lua_example` and get_lua_script example`."
 }
