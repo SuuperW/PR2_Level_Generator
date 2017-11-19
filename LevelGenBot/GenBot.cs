@@ -66,7 +66,7 @@ namespace LevelGenBot
 
 			// Delete any temp files that still exist from last time the bot was run.
 			if (Directory.Exists("temp"))
-				Directory.Delete("temp");
+				Directory.Delete("temp", true);
 			Directory.CreateDirectory("temp");
 
 			Directory.CreateDirectory(configsPath);
