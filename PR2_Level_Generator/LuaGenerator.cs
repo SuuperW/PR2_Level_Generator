@@ -26,6 +26,7 @@ namespace PR2_Level_Generator
 			script = new Script(CoreModules.Preset_HardSandbox);
 			parameters = new SortedDictionary<string, DynValue>();
 			ExposeFunctions();
+			RemoveFunctionsWithCallbacks();
 			try
 			{
 				// Wrap the code in a function, so that MoonSharp can use it as a coroutine.
@@ -47,6 +48,21 @@ namespace PR2_Level_Generator
 			}
 
 			return null;
+		}
+		private void RemoveFunctionsWithCallbacks()
+		{
+			// Prevent users from hanging the generator with an infinite loop.
+			// If a coroutine calls a MoonSharp function which then calls a Lua function, it cannot AutoYield.
+			// So, remove the ability to use these callbacks.
+
+			script.Globals["load"] = DynValue.Nil;
+
+			DynValue sort = script.Globals.Get("table").Table.Get("sort");
+			script.Globals.Get("table").Table["sort"] = (Action<Table>)((t) => { script.Call(sort, t); });
+
+			DynValue gsub = script.Globals.Get("string").Table.Get("gsub");
+			script.Globals.Get("string").Table["gsub"] = (Func<DynValue, DynValue, DynValue, DynValue, DynValue>)((s, p, r, n) => {
+				if (p.Function == null) return script.Call(gsub, s, p, r, n); else return null; });
 		}
 
 		private SortedDictionary<string, DynValue> parameters;
