@@ -614,14 +614,20 @@ namespace LevelGenBot
 				return false;
 			}
 
-			ILevelGenerator gen = GeneratorFromSettings(str);
-			if (gen == null)
+			string tempFileName = GetTempFileName();
+			File.WriteAllText(tempFileName, str);
+
+			GenerationManager generationManager = new GenerationManager();
+			generationManager.luaPath = luaPath;
+			string result = generationManager.LoadSettings(tempFileName);
+			File.Delete(tempFileName);
+			if (result != null)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the config file you provided is invalid.");
+				await SendMessage(msg.Channel, msg.Author.Mention + ", the config file you provided is invalid. Reason: `" + result + "`");
 				return false;
 			}
 
-			string rejectedReason = VerifySettings(gen, fileName, msg.Author.Id);
+			string rejectedReason = VerifySettings(generationManager.generator, fileName, msg.Author.Id);
 			if (rejectedReason != null)
 			{
 				await SendMessage(msg.Channel, msg.Author.Mention + " - " + rejectedReason);
@@ -648,25 +654,6 @@ namespace LevelGenBot
 			  msg.Attachments.First().Filename + "' has been saved.");
 
 			return true;
-		}
-		private ILevelGenerator GeneratorFromSettings(string settings)
-		{
-			string tempFileName = GetTempFileName();
-			File.WriteAllText(tempFileName, settings);
-
-			GenerationManager generationManager = new GenerationManager();
-			bool valid = false;
-			try
-			{ valid = generationManager.LoadSettings(tempFileName) != null; }
-			catch (Newtonsoft.Json.JsonReaderException ex)
-			{ valid = false; }
-
-			File.Delete(tempFileName);
-
-			if (valid)
-				return generationManager.generator;
-			else
-				return null;
 		}
 		private string VerifySettings(ILevelGenerator gen, string fileName, ulong userID)
 		{
