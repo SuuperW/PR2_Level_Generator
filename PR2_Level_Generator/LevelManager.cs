@@ -106,7 +106,12 @@ namespace PR2_Level_Generator
 			}
 
 			string str = File.ReadAllText(path);
-			JObject json = JObject.Parse(str);
+
+			JObject json;
+			try
+			{ json = JObject.Parse(str); }
+			catch (Newtonsoft.Json.JsonReaderException)
+			{ return "json error"; }
 			// Fail if the json contents don't exactly match what is expected.
 			if (json.Count != 3)
 				return "invalid config";
