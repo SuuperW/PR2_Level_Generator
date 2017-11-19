@@ -30,7 +30,7 @@ namespace PR2_Level_Generator
 			try
 			{
 				// Wrap the code in a function, so that MoonSharp can use it as a coroutine.
-				string codeToRun = "function Initialize()\n" + _luaScript + "\n" +
+				string codeToRun = "function Initialize() " + _luaScript + "\n" +
 					"_G.Generate = Generate;\nend";
 				script.DoString(codeToRun);
 				DynValue initFunction = script.Globals.Get("Initialize");
