@@ -63,6 +63,7 @@ namespace LevelGenBot
 				helpStrings[item.Key] = item.Value.ToString();
 
 			InitializeBotCommandsList();
+			CreateHelpTopicsList();
 
 			// Delete any temp files that still exist from last time the bot was run.
 			if (Directory.Exists("temp"))
@@ -344,7 +345,6 @@ namespace LevelGenBot
 		{
 			everybodyBotCommands = new SortedList<string, BotCommand>();
 			everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
-			everybodyBotCommands.Add("help_topics", new BotCommand(SendHelpTopicsMessage));
 			everybodyBotCommands.Add("commands", new BotCommand(SendCommandsList));
 			everybodyBotCommands.Add("config_list", new BotCommand(SendConfigsListMessage));
 			everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
@@ -370,6 +370,19 @@ namespace LevelGenBot
 
 			bannedCommand = new BotCommand(SendBannedMessage);
 		}
+		private void CreateHelpTopicsList()
+		{
+			helpStrings.Add("topics", "");
+			StringBuilder str = new StringBuilder("Here is the list of available help topics:```");
+			foreach (string topic in helpStrings.Keys)
+			{
+				if (!topic.StartsWith('_'))
+					str.Append("\n" + topic);
+			}
+			str.Append("```");
+
+			helpStrings["topics"] = str.ToString();
+		}
 
 		private SortedDictionary<string, string> helpStrings;
 		private async Task<bool> SendHelpMessage(SocketMessage msg, params string[] args)
@@ -385,23 +398,10 @@ namespace LevelGenBot
 			else
 			{
 				await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(),
-				  "I could not find the help topic you gave me. To see a list of available help topics, use the command `help_topics`.");
+				  "I could not find the help topic you gave me. To see a list of available help topics, use the command `help topics`.");
 				return false;
 			}
 
-			return true;
-		}
-		private async Task<bool> SendHelpTopicsMessage(SocketMessage msg, params string[] args)
-		{
-			StringBuilder str = new StringBuilder("Here is the list of available help topics:```");
-			foreach (string topic in helpStrings.Keys)
-			{
-				if (!topic.StartsWith('_'))
-					str.Append("\n" + topic);
-			}
-			str.Append("```");
-
-			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), str.ToString());
 			return true;
 		}
 		private async Task<bool> SendCommandsList(SocketMessage msg, params string[] args)
