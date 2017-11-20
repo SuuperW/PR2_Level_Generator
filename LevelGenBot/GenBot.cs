@@ -578,8 +578,14 @@ namespace LevelGenBot
 		}
 		private async Task GetAndSendFile(string filePath, string extension, SocketMessage msg, bool asText)
 		{
-			string messageStr = msg.Author.Mention + ", here is the file.";
 			string fileName = Path.GetFileNameWithoutExtension(filePath) + extension;
+			if (!File.Exists(filePath))
+			{
+				await SendMessage(msg.Channel, msg.Author.Username + ", the file `" + fileName + "` does not exist.");
+				return;
+			}
+
+			string messageStr = msg.Author.Mention + ", here is the file.";
 			if (asText)
 			{
 				string fileStr = File.ReadAllText(filePath);
@@ -615,7 +621,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			str.Replace("\"Generator Type\": \"me/", "\"Generator Type\": \"" + msg.Author.Id + "/");
+			str = str.Replace("\"Generator Type\": \"me/", "\"Generator Type\": \"" + msg.Author.Id + "/");
 			string tempFileName = GetTempFileName();
 			File.WriteAllText(tempFileName, str);
 
