@@ -19,5 +19,5 @@
 \nOnce you have a config file, open it with a text editor and modify the params/settings values it contains. Then, save the file with whatever name you want your config to have. Finally, upload the file with a message using the command `set_config`. If your config file is valid, you will now be able to use it when generating levels by giving the config name as `me/[your_config's_name]` in the generate command. It will also show up in the list of available configs when you use the `config_list` command (with the required 'me/' included).",
 
 	"lua": "This bot can use a Lua script to generate levels. To set a config file to use a Lua script, set its `Generator Type` to the name of the Lua script. You can upload your own Lua scripts using the `set_lua_script` command. When creating a config file to use a Lua script you have uploaded, ensure that the Generator Type includes `me/`, to match the name given by the `lua_script_list` command. (The bot will replace the 'me' with your Discord ID, which will also work.)
-\nFor example config and Lua scripts, use `get_config lua_example` and get_lua_script example`."
+\nFor example config and Lua scripts, use `get_config lua_example` and `get_lua_script example`."
 }
