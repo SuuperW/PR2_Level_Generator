@@ -12,6 +12,11 @@ namespace PR2_Level_Generator
 {
 	public class GenerationManager
 	{
+		public GenerationManager(string luaPath)
+		{
+			this.luaPath = luaPath;
+		}
+
 		public string login_token;
 		public string username;
 		public string luaPath = "lua";

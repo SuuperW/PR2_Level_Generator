@@ -433,8 +433,7 @@ namespace LevelGenBot
 			}
 
 			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
-			GenerationManager generationManager = new GenerationManager();
-			generationManager.luaPath = luaPath;
+			GenerationManager generationManager = new GenerationManager(luaPath);
 			string result = generationManager.LoadSettings(filePath);
 			if (result != null)
 			{
@@ -626,8 +625,7 @@ namespace LevelGenBot
 			string tempFileName = GetTempFileName();
 			File.WriteAllText(tempFileName, str);
 
-			GenerationManager generationManager = new GenerationManager();
-			generationManager.luaPath = luaPath;
+			GenerationManager generationManager = new GenerationManager(luaPath);
 			string result = generationManager.LoadSettings(tempFileName);
 			File.Delete(tempFileName);
 			if (result != null)
@@ -729,7 +727,7 @@ namespace LevelGenBot
 			File.WriteAllText(filePath, str);
 
 			// Create config file
-			GenerationManager generationManager = new GenerationManager();
+			GenerationManager generationManager = new GenerationManager(luaPath);
 			generationManager.generator = luaGenerator;
 			JObject config = generationManager.GetSaveObject();
 			config["Map Settings"]["live"] = 0;
