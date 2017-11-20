@@ -780,8 +780,7 @@ namespace LevelGenBot
 			}
 
 			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
-			if (File.Exists(filePath)
-			{
+			if (File.Exists(filePath))
 			{
 				File.Delete(filePath);
 				await SendMessage(msg.Channel, msg.Author.Username + ", the config '" + args[1] + "' has been deleted.");
