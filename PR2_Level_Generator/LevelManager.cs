@@ -123,10 +123,17 @@ namespace PR2_Level_Generator
 			if (json["Generator Type"] == null || json["Generator Params"] == null || json["Map Settings"] == null)
 				return "invalid config";
 
-			Type t = Type.GetType(json["Generator Type"].ToString());
 			ILevelGenerator oldGen = generator;
-			if (t == null) // Check if it is an existing lua script.
+			Type t = Type.GetType(json["Generator Type"].ToString());
+
+			if (t != null && t.IsAssignableFrom(typeof(ILevelGenerator))) 
+				generator = Activator.CreateInstance(t) as ILevelGenerator;
+			else
 			{
+				// Check if it is an existing lua script.
+				if (luaPath == null)
+					return "invalid generator type; lua disabled";
+
 				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString().Replace("../", "")); // disallow ../ for security reasons
 				if (File.Exists(filePath))
 				{
@@ -137,10 +144,9 @@ namespace PR2_Level_Generator
 					generator = luaGenerator;
 				}
 				else
-					return "could not find lua file";
+					return "invalid generator type; could not find lua file";
 			}
-			else
-				generator = Activator.CreateInstance(t) as ILevelGenerator;
+
 
 			string ret = null;
 			foreach (JProperty j in json["Generator Params"])
