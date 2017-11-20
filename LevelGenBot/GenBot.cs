@@ -231,7 +231,7 @@ namespace LevelGenBot
 				{
 					if (!msg.Author.IsBot)
 					{
-						await SendMessage(msg.Channel, msg.Author.Mention + ", I attempted to send you a DM " +
+						await SendMessage(msg.Channel, msg.Author.Username + ", I attempted to send you a DM " +
 						  "but was unable to. Please ensure that you can receive DMs from me.");
 					}
 				}
@@ -241,7 +241,7 @@ namespace LevelGenBot
 				await LogError(ex);
 
 				await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), errorPath, "I've encountered an error.");
-				await SendMessage(msg.Channel, msg.Author.Mention +
+				await SendMessage(msg.Channel, msg.Author.Username +
 					", I have encountered an error and don't know what to do with it. :(\n" +
 					"Error details have been sent to my owner.");
 			}
@@ -438,7 +438,7 @@ namespace LevelGenBot
 			string result = generationManager.LoadSettings(filePath);
 			if (result != null)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", " +
+				await SendMessage(msg.Channel, msg.Author.Username + ", " +
 				  "config `" + args[1] + "` failed to load. Reason: `" + result + "`\n");
 				return false;
 			}
@@ -450,13 +450,13 @@ namespace LevelGenBot
 			{
 				if (args.Length <= i + 1 || !generationManager.SetParamOrSetting(args[i], args[i + 1]))
 				{
-					await SendMessage(msg.Channel, msg.Author.Mention + ", I could not set `" + args[i] +
+					await SendMessage(msg.Channel, msg.Author.Username + ", I could not set `" + args[i] +
 					  "`. Level generation cancelled.");
 					return false;
 				}
 			}
 
-			Task<IUserMessage> sendingGenerateMessage = SendMessage(msg.Channel, msg.Author.Mention +
+			Task<IUserMessage> sendingGenerateMessage = SendMessage(msg.Channel, msg.Author.Username +
 			  ", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
@@ -469,12 +469,12 @@ namespace LevelGenBot
 				await sendingGenerateMessage;
 				if (cts.IsCancellationRequested)
 				{
-					await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level took too long to generate.\n" +
+					await EditMessage(sendingGenerateMessage.Result, msg.Author.Username + ", your level took too long to generate.\n" +
 					  "If this happens regularly with this config, please edit the config to make the levels smaller.");
 				}
 				else
 				{
-					await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention + ", your level failed to generate. " +
+					await EditMessage(sendingGenerateMessage.Result, msg.Author.Username + ", your level failed to generate. " +
 					  "Reason: `" + result + "`");
 				}
 				return false;
@@ -482,13 +482,13 @@ namespace LevelGenBot
 
 			string response = await generationManager.UploadLevel();
 
-			await EditMessage(sendingGenerateMessage.Result, msg.Author.Mention +
+			await EditMessage(sendingGenerateMessage.Result, msg.Author.Username +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
 			return true;
 		}
 		private async Task<bool> SendGenerateHelpMessage(SocketMessage msg)
 		{
-			await SendMessage(msg.Channel, msg.Author.Mention +
+			await SendMessage(msg.Channel, msg.Author.Username +
 			  ", to generate a level, please use the following format:\n" +
 			  "```@me generate [name of config to use]```\n" +
 			  "To see a list of available configs, say `@me config_list`.");
@@ -554,7 +554,7 @@ namespace LevelGenBot
 		{
 			if (args.Length < 2)
 			{
-				await SendMessage(msg.Channel, "You didn't specify a config file to get, silly " + msg.Author.Mention + "!");
+				await SendMessage(msg.Channel, "You didn't specify a config file to get, silly " + msg.Author.Username + "!");
 				return false;
 			}
 
@@ -585,18 +585,18 @@ namespace LevelGenBot
 				return;
 			}
 
-			string messageStr = msg.Author.Mention + ", here is the file.";
+			string messageStr = msg.Author.Username + ", here is the file.";
 			if (asText)
 			{
 				string fileStr = File.ReadAllText(filePath);
-				messageStr = msg.Author.Mention + ", here are the contents of `" +
+				messageStr = msg.Author.Username + ", here are the contents of `" +
 				  fileName + "`.\n```" + (extension == ".lua" ? "lua\n": "") + fileStr + "```";
 				if (messageStr.Length < 2000)
 					await SendMessage(msg.Channel, messageStr);
 				else
 				{
 					asText = false;
-					messageStr = msg.Author.Mention + ", the contents of '" + fileName +
+					messageStr = msg.Author.Username + ", the contents of '" + fileName +
 					  "' are too large to post in a Discord message, so here is the file.";
 				}
 			}
@@ -617,7 +617,7 @@ namespace LevelGenBot
 			string str = await GetAttachmentString(msg.Attachments.First());
 			if (str.Length > 0x4000)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the config file you provided is too big.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config file you provided is too big.");
 				return false;
 			}
 
@@ -631,14 +631,14 @@ namespace LevelGenBot
 			File.Delete(tempFileName);
 			if (result != null)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the config file you provided is invalid. Reason: `" + result + "`");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config file you provided is invalid. Reason: `" + result + "`");
 				return false;
 			}
 
 			string rejectedReason = VerifySettings(generationManager.generator, fileName, msg.Author.Id);
 			if (rejectedReason != null)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + " - " + rejectedReason);
+				await SendMessage(msg.Channel, msg.Author.Username + " - " + rejectedReason);
 				return false;
 			}
 
@@ -652,13 +652,13 @@ namespace LevelGenBot
 
 			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", you have too many saved configs. " +
+				await SendMessage(msg.Channel, msg.Author.Username + ", you have too many saved configs. " +
 				  "Please delete one before uploading any more.");
 				return false;
 			}
 
 			File.WriteAllText(fileName, str);
-			await SendMessage(msg.Channel, msg.Author.Mention + ", config file '" +
+			await SendMessage(msg.Channel, msg.Author.Username + ", config file '" +
 			  msg.Attachments.First().Filename + "' has been saved.");
 
 			return true;
@@ -694,7 +694,7 @@ namespace LevelGenBot
 			string str = await GetAttachmentString(msg.Attachments.First());
 			if (str.Length > 0x8000)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua file you provided is too big.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the lua file you provided is too big.");
 				return false;
 			}
 
@@ -702,7 +702,7 @@ namespace LevelGenBot
 			string result = luaGenerator.SetLua(str);
 			if (result != null)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua file you provided is invalid. Details: `" + result + "`");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the lua file you provided is invalid. Details: `" + result + "`");
 				return false;
 			}
 
@@ -716,13 +716,13 @@ namespace LevelGenBot
 
 			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", you have too many saved configs. " +
+				await SendMessage(msg.Channel, msg.Author.Username + ", you have too many saved configs. " +
 				  "Please delete one before uploading any more.");
 				return false;
 			}
 
 			File.WriteAllText(fileName, str);
-			await SendMessage(msg.Channel, msg.Author.Mention + ", lua script '" +
+			await SendMessage(msg.Channel, msg.Author.Username + ", lua script '" +
 			  msg.Attachments.First().Filename + "' has been saved.");
 
 			return true;
@@ -731,7 +731,7 @@ namespace LevelGenBot
 		{
 			if (args.Length < 2)
 			{
-				await SendMessage(msg.Channel, "You didn't specify a lua script to get, silly " + msg.Author.Mention + "!");
+				await SendMessage(msg.Channel, "You didn't specify a lua script to get, silly " + msg.Author.Username + "!");
 				return false;
 			}
 
@@ -745,12 +745,12 @@ namespace LevelGenBot
 			if (args.Length < 2)
 			{
 				await SendMessage(msg.Channel, "You didn't specify a lua script to delete, silly " +
-				  msg.Author.Mention + "!");
+				  msg.Author.Username + "!");
 				return false;
 			}
 			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", you may only delete your own configs.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", you may only delete your own configs.");
 				return false;
 			}
 
@@ -758,10 +758,10 @@ namespace LevelGenBot
 			if (File.Exists(filePath))
 			{
 				File.Delete(filePath);
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua script '" + args[1] + "' has been deleted.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the lua script '" + args[1] + "' has been deleted.");
 			}
 			else
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the lua script `" + args[1] + "` does not exist.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the lua script `" + args[1] + "` does not exist.");
 			return true;
 		}
 
@@ -770,12 +770,12 @@ namespace LevelGenBot
 			if (args.Length < 2)
 			{
 				await SendMessage(msg.Channel, "You didn't specify a config file to delete, silly " +
-				  msg.Author.Mention + "!");
+				  msg.Author.Username + "!");
 				return false;
 			}
 			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", you may only delete your own configs.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", you may only delete your own configs.");
 				return false;
 			}
 
@@ -783,16 +783,16 @@ namespace LevelGenBot
 			if (File.Exists(filePath))
 			{
 				File.Delete(filePath);
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the config '" + args[1] + "' has been deleted.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config '" + args[1] + "' has been deleted.");
 			}
 			else
-				await SendMessage(msg.Channel, msg.Author.Mention + ", the config `" + args[1] + "` does not exist.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config `" + args[1] + "` does not exist.");
 			return true;
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
 		{
-			await SendMessage(msg.Channel, "I'm sorry you feel that way, " + msg.Author.Mention +
+			await SendMessage(msg.Channel, "I'm sorry you feel that way, " + msg.Author.Username +
 			  ". :(\nI guess I'll leave now. Bye guys!");
 			Disconnect(); // Do not await because DCing in the middle of the DiscordSocketClient's MessageReceived event causes problems.
 			return true;
@@ -852,7 +852,7 @@ namespace LevelGenBot
 		{
 			if (msg.Attachments.Count != 1)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", please upload a file to use this command.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", please upload a file to use this command.");
 				return null;
 			}
 
@@ -861,7 +861,7 @@ namespace LevelGenBot
 			fileName = Path.ChangeExtension(fileName, null);
 			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(basePath).FullName)
 			{
-				await SendMessage(msg.Channel, msg.Author.Mention + ", there seems to be something wonky with your file name.");
+				await SendMessage(msg.Channel, msg.Author.Username + ", there seems to be something wonky with your file name.");
 				return null;
 			}
 			else
