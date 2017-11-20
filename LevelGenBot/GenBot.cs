@@ -610,9 +610,10 @@ namespace LevelGenBot
 
 		private async Task<bool> SetConfigFile(SocketMessage msg, params string[] args)
 		{
-			string fileName = await FileNameFromAttachment(msg, configsPath);
+			string fileName = await FileNameFromAttachment(msg);
 			if (fileName == null)
 				return false; // FileNameFromAttachment will send the user an error message, if appropriate.
+			string filePath = Path.Combine(configsPath, fileName);
 
 			string str = await GetAttachmentString(msg.Attachments.First());
 			if (str.Length > 0x4000)
@@ -635,7 +636,7 @@ namespace LevelGenBot
 				return false;
 			}
 
-			string rejectedReason = VerifySettings(generationManager.generator, fileName, msg.Author.Id);
+			string rejectedReason = VerifySettings(generationManager.generator, msg.Author.Id);
 			if (rejectedReason != null)
 			{
 				await SendMessage(msg.Channel, msg.Author.Username + " - " + rejectedReason);
@@ -644,26 +645,25 @@ namespace LevelGenBot
 
 			if (!specialUsers.IsUserTrusted(msg.Author.Id) || !args.Contains("public"))
 			{
-				string dir = Path.Combine(Directory.GetParent(fileName).FullName, msg.Author.Id.ToString());
-				fileName = Path.Combine(dir, new FileInfo(fileName).Name);
+				string dir = Path.Combine(Directory.GetParent(filePath).FullName, msg.Author.Id.ToString());
 				if (!Directory.Exists(dir))
 					Directory.CreateDirectory(dir);
+				filePath = Path.Combine(dir, fileName);
 			}
 
-			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
+			if (Directory.EnumerateFiles(Directory.GetParent(filePath).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
 			{
 				await SendMessage(msg.Channel, msg.Author.Username + ", you have too many saved configs. " +
 				  "Please delete one before uploading any more.");
 				return false;
 			}
 
-			File.WriteAllText(fileName, str);
-			await SendMessage(msg.Channel, msg.Author.Username + ", config file '" +
-			  msg.Attachments.First().Filename + "' has been saved.");
+			File.WriteAllText(filePath, str);
+			await SendMessage(msg.Channel, msg.Author.Username + ", config file '" + fileName + "' has been saved.");
 
 			return true;
 		}
-		private string VerifySettings(ILevelGenerator gen, string fileName, ulong userID)
+		private string VerifySettings(ILevelGenerator gen, ulong userID)
 		{
 			if (userID == specialUsers.Owner)
 				return null;
@@ -687,9 +687,10 @@ namespace LevelGenBot
 		}
 		private async Task<bool> SetLuaScript(SocketMessage msg, params string[] args)
 		{
-			string fileName = await FileNameFromAttachment(msg, luaPath);
+			string fileName = await FileNameFromAttachment(msg);
 			if (fileName == null)
 				return false; // FileNameFromAttachment will send the user an error message, if appropriate.
+			string filePath = Path.Combine(luaPath, fileName);
 
 			string str = await GetAttachmentString(msg.Attachments.First());
 			if (str.Length > 0x8000)
@@ -698,6 +699,7 @@ namespace LevelGenBot
 				return false;
 			}
 
+			// Verify Lua script is valid
 			LuaGenerator luaGenerator = new LuaGenerator();
 			string result = luaGenerator.SetLua(str);
 			if (result != null)
@@ -706,24 +708,39 @@ namespace LevelGenBot
 				return false;
 			}
 
+			// Public or private?
 			if (!specialUsers.IsUserTrusted(msg.Author.Id) || !args.Contains("public"))
 			{
-				string dir = Path.Combine(Directory.GetParent(fileName).FullName, msg.Author.Id.ToString());
-				fileName = Path.Combine(dir, new FileInfo(fileName).Name);
+				string dir = Path.Combine(Directory.GetParent(filePath).Name, msg.Author.Id.ToString());
 				if (!Directory.Exists(dir))
 					Directory.CreateDirectory(dir);
+				filePath = Path.Combine(dir, fileName);
 			}
 
-			if (Directory.EnumerateFiles(Directory.GetParent(fileName).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
+			// Limit number of scripts a user can have
+			if (Directory.EnumerateFiles(Directory.GetParent(filePath).FullName, "*", SearchOption.TopDirectoryOnly).Count() > 50)
 			{
 				await SendMessage(msg.Channel, msg.Author.Username + ", you have too many saved configs. " +
 				  "Please delete one before uploading any more.");
 				return false;
 			}
 
-			File.WriteAllText(fileName, str);
-			await SendMessage(msg.Channel, msg.Author.Username + ", lua script '" +
-			  msg.Attachments.First().Filename + "' has been saved.");
+			// Save file
+			File.WriteAllText(filePath, str);
+
+			// Create config file
+			GenerationManager generationManager = new GenerationManager();
+			generationManager.generator = luaGenerator;
+			JObject config = generationManager.GetSaveObject();
+			config["Map Settings"]["live"] = 0;
+			config["Map Settings"]["hasPass"] = 1;
+			config["Map Settings"]["title"] = fileName;
+			config["Generator Type"] = filePath.Substring(luaPath.Length + 1).Replace('\\', '/');
+
+			// Send the file to the user
+			MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(config.ToString()));
+			await SendFile(msg.Channel, stream, fileName + ".txt", msg.Author.Username + ", here is a config file to use with your Lua script." +
+			  "\nModify any settings you want and then upload it with `set_config`.");
 
 			return true;
 		}
@@ -848,7 +865,7 @@ namespace LevelGenBot
 
 		#endregion
 
-		private async Task<string> FileNameFromAttachment(SocketMessage msg, string basePath)
+		private async Task<string> FileNameFromAttachment(SocketMessage msg)
 		{
 			if (msg.Attachments.Count != 1)
 			{
@@ -856,10 +873,10 @@ namespace LevelGenBot
 				return null;
 			}
 
-			Attachment a = msg.Attachments.First();
-			string fileName = Path.Combine(basePath, a.Filename.Replace("../", "")); // .Replace for security
+			string fileName = msg.Attachments.First().Filename.Replace("../", ""); // .Replace for security
 			fileName = Path.ChangeExtension(fileName, null);
-			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(basePath).FullName)
+			// Ensure the path doesn't lead outside the current folder.
+			if (Directory.GetParent(fileName).FullName != new DirectoryInfo(".").FullName)
 			{
 				await SendMessage(msg.Channel, msg.Author.Username + ", there seems to be something wonky with your file name.");
 				return null;
