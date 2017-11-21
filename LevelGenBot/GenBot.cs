@@ -729,11 +729,11 @@ namespace LevelGenBot
 			// Create config file
 			GenerationManager generationManager = new GenerationManager(luaPath);
 			generationManager.generator = luaGenerator;
+			luaGenerator.ScriptName = filePath.Substring(luaPath.Length + 1).Replace('\\', '/');
 			JObject config = generationManager.GetSaveObject();
 			config["Map Settings"]["live"] = 0;
 			config["Map Settings"]["hasPass"] = 1;
 			config["Map Settings"]["title"] = fileName;
-			config["Generator Type"] = filePath.Substring(luaPath.Length + 1).Replace('\\', '/');
 
 			// Send the file to the user
 			MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(config.ToString()));
