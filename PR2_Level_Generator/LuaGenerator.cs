@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,14 +26,13 @@ namespace PR2_Level_Generator
 			Map = new MapLE();
 
 			script = new Script(CoreModules.Preset_HardSandbox);
-			parameters = new SortedDictionary<string, DynValue>();
 			ExposeFunctions();
 			RemoveFunctionsWithCallbacks();
 			try
 			{
 				// Wrap the code in a function, so that MoonSharp can use it as a coroutine.
 				string codeToRun = "function Initialize() " + _luaScript + "\n" +
-					"_G.Generate = Generate;\nend";
+					"_G.Generate = Generate;\n_G.params = params;\nend";
 				script.DoString(codeToRun);
 				DynValue initFunction = script.Globals.Get("Initialize");
 				Coroutine coroutine = script.CreateCoroutine(initFunction).Coroutine;
@@ -66,7 +66,7 @@ namespace PR2_Level_Generator
 				if (p.Function == null) return script.Call(gsub, s, p, r, n); else return null; });
 		}
 
-		private SortedDictionary<string, DynValue> parameters;
+		private Table Parameters => script.Globals.Get("params").Table;
 
 		public LuaGenerator()
 		{
@@ -82,11 +82,6 @@ namespace PR2_Level_Generator
 		#region "lua functions"
 		private void ExposeFunctions()
 		{
-			script.Globals["SetParam"] = (Action<string, DynValue>)((n, v) => { parameters[n] = v; });
-			script.Globals["GetParam"] = (Func<string, DynValue>)((n) => {
-				if (parameters.ContainsKey(n)) return parameters[n];
-				else throw new ScriptRuntimeException("Attempted to get non-existent param '" + n + "'."); });
-
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 
 			script.Globals["PlaceText"] = (Action<string, double, double, int, double, double>)Map.PlaceText;
@@ -100,21 +95,19 @@ namespace PR2_Level_Generator
 
 		public string[] GetParamNames()
 		{
-			string[] ret = new string[parameters.Count];
-			parameters.Keys.CopyTo(ret, 0);
-			return ret;
+			return Parameters.Keys.Convert<string>(DataType.String).ToArray();
 		}
 
 		public string GetParamValue(string paramName)
 		{
-			return parameters[paramName].CastToString();
+			return Parameters.Get(paramName).CastToString();
 		}
 
 		public bool SetParamValue(string paramName, string value)
 		{
-			if (parameters.ContainsKey(paramName))
+			if (GetParamNames().Contains(paramName))
 			{
-				parameters[paramName] = DynValue.FromObject(script, Newtonsoft.Json.Linq.JToken.Parse(value).ToObject<object>());
+				Parameters[paramName] = DynValue.FromObject(script, Newtonsoft.Json.Linq.JToken.Parse(value).ToObject<object>());
 				return true;
 			}
 			else
@@ -151,10 +144,8 @@ namespace PR2_Level_Generator
 		{
 			StringBuilder ret = new StringBuilder();
 			ret.Append(this.GetType().ToString());
-			foreach (KeyValuePair<string, DynValue> kvp in parameters)
-			{
-				ret.Append("\n" + kvp.Key + ":" + kvp.Value.ToString());
-			}
+			foreach (TablePair tp in Parameters.Pairs)
+				ret.Append("\n" + tp.Key.CastToString() + ": " + tp.Value.CastToString());
 
 			return ret.ToString();
 		}
