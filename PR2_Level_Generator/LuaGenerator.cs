@@ -89,15 +89,8 @@ namespace PR2_Level_Generator
 
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 
-			script.Globals["PlaceText"] = (Action<string, int, int, int, double, double>)PlaceText;
+			script.Globals["PlaceText"] = (Action<string, double, double, int, double, double>)Map.PlaceText;
 			script.Globals["ColorFromRGB"] = (Func<int, int, int, int>)ColorFromRGB;
-		}
-		private void PlaceText(string text, int x, int y, int color = 0, double width = 100, double height = 100)
-		{
-				if (Map.artCodes[0].Length > 0)
-					Map.artCodes[0] += ",";
-				Map.artCodes[0] += x + ";" + y + ";t;" + Uri.EscapeDataString(text) +
-				  ";" + color + ";" + width + ";" + height;
 		}
 		private int ColorFromRGB(int r, int g, int b)
 		{

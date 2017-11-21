@@ -105,7 +105,8 @@ namespace PR2_Level_Generator
 		/// NaN and values over 0 but below 1 result in 0 second time limit, not infinite time.
 		/// I will represent unlimited time as a -1. 0 means 0 second limit.
 		/// </summary>
-		public int TimeLimit {
+		public int TimeLimit
+		{
 			get
 			{
 				if (!double.TryParse(settings["max_time"], out double v))
@@ -144,8 +145,8 @@ namespace PR2_Level_Generator
 		public bool Published { get => settings["live"].StartsWith('1'); }
 		public string userName = "";
 
-        public bool SetSetting(string name, string value)
-        {
+		public bool SetSetting(string name, string value)
+		{
 			if (settings.ContainsKey(name))
 			{
 				if (name == "items")
@@ -160,16 +161,16 @@ namespace PR2_Level_Generator
 
 			Console.Write("No setting \'" + name + "\' exits.");
 			return false;
-        }
-        public string GetSetting(string name)
-        {
+		}
+		public string GetSetting(string name)
+		{
 			if (settings.ContainsKey(name))
 				return settings[name];
 			else
 				return "Setting \'" + name + "\' does not exist.";
-        }
+		}
 
-  		private void SetItems(string ItemStr)
+		private void SetItems(string ItemStr)
 		{
 			string[] avItemStr = ItemStr.Split('`');
 			List<int> itemList = new List<int>();
@@ -430,6 +431,22 @@ namespace PR2_Level_Generator
 			}
 		}
 
+		private int lastStampX = 0;
+		private int lastStampY = 0;
+		char[] specialTextChars = new char[] { ';', ',', '`', '&', '#' };
+		public void PlaceText(string text, double x, double y, int color = 0, double width = 100, double height = 100)
+		{
+			if (artCodes[0].Length > 0)
+				artCodes[0] += ",";
+			x -= lastStampX;
+			y -= lastStampY;
+			for (int i = 0; i < specialTextChars.Length; i++)
+				text = text.Replace(specialTextChars[i].ToString(), "#" + (int)specialTextChars[i]);
+			artCodes[0] += x + ";" + y + ";t;" + text + ";" + color + ";" + width + ";" + height;
+			lastStampX += (int)x;
+			lastStampY += (int)y;
+		}
+
 		// Make sure a given index exists in the Blocks list
 		private void CreateIndex(int X, int Y)
 		{
@@ -546,7 +563,7 @@ namespace PR2_Level_Generator
 		{
 			string data = GetDataParam(keepArt);
 			string stringToHash = settings["title"] + userName.ToLower() + data + "[salt]";
-			byte[] bytesToHash = Encoding.UTF8.GetBytes(stringToHash);
+			byte[] bytesToHash = Encoding.UTF8.GetBytes(Uri.UnescapeDataString(stringToHash.Replace('+', ' ')));
 			byte[] bytesHashed = (new MD5CryptoServiceProvider()).ComputeHash(bytesToHash);
 			string upload_hash = BitConverter.ToString(bytesHashed).Replace("-", "").ToLower();
 
