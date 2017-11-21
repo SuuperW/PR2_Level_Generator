@@ -62,8 +62,9 @@ namespace PR2_Level_Generator
 			}
 
 			string oldNote = Map.GetSetting("note");
-			Map.SetSetting("note", oldNote + "Gen: " + generator.GetType().ToString().Split('.').Last() + "\n" +
-				GetSaveObject()["Generator Params"].ToString().Replace("\r\n", "\n").Replace(" ", ""));
+			Map.SetSetting("note", oldNote + "Gen: " +
+			  ((generator is LuaGenerator) ? (generator as LuaGenerator).ScriptName : generator.GetType().ToString().Split('.').Last()) + "\n" +
+			  GetSaveObject()["Generator Params"].ToString().Replace("\r\n", "\n").Replace(" ", ""));
 
 			if (oldSeed != null)
 				generator.SetParamValue("seed", oldSeed);
