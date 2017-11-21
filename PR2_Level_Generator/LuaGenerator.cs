@@ -82,9 +82,10 @@ namespace PR2_Level_Generator
 		#region "lua functions"
 		private void ExposeFunctions()
 		{
-			script.Globals["CreateParam"] = (Action<string>)((n) => { parameters.Add(n, DynValue.NewNil()); });
 			script.Globals["SetParam"] = (Action<string, DynValue>)((n, v) => { parameters[n] = v; });
-			script.Globals["GetParam"] = (Func<string, DynValue>)((n) => { return parameters[n]; });
+			script.Globals["GetParam"] = (Func<string, DynValue>)((n) => {
+				if (parameters.ContainsKey(n)) return parameters[n];
+				else throw new ScriptRuntimeException("Attempted to get non-existent param '" + n + "'."; });
 
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 
