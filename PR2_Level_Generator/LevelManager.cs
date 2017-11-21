@@ -128,7 +128,7 @@ namespace PR2_Level_Generator
 			ILevelGenerator oldGen = generator;
 			Type t = Type.GetType(json["Generator Type"].ToString());
 
-			if (t != null && typeof(ILevelGenerator).IsAssignableFrom(t)) 
+			if (t != null && typeof(ILevelGenerator).IsAssignableFrom(t))
 				generator = Activator.CreateInstance(t) as ILevelGenerator;
 			else
 			{
@@ -136,7 +136,8 @@ namespace PR2_Level_Generator
 				if (luaPath == null)
 					return "invalid generator type; lua disabled";
 
-				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString().Replace("../", "")); // disallow ../ for security reasons
+				// disallow ../ for security reasons
+				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString().Replace("../", ""));
 				// Ensure file is in the luaPath directory, and that it exists.
 				if (Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(luaPath)) && File.Exists(filePath))
 				{
@@ -155,7 +156,7 @@ namespace PR2_Level_Generator
 			string ret = null;
 			foreach (JProperty j in json["Generator Params"])
 			{
-				if (!SetParamOrSetting(j.Name, j.Value.ToString()))
+				if (!SetParamOrSetting(j.Name, j.Value.ToString(Newtonsoft.Json.Formatting.None)))
 				{
 					ret = "could not set param '" + j.Name + "'";
 					break;

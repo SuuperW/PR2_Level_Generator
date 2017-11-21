@@ -114,7 +114,7 @@ namespace PR2_Level_Generator
 		{
 			if (parameters.ContainsKey(paramName))
 			{
-				parameters[paramName] = DynValue.FromObject(script, value);
+				parameters[paramName] = DynValue.FromObject(script, Newtonsoft.Json.Linq.JToken.Parse(value).ToObject<object>());
 				return true;
 			}
 			else
