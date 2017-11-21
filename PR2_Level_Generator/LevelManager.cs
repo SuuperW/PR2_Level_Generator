@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Web;
 
 using Newtonsoft.Json.Linq;
 
@@ -201,6 +202,40 @@ namespace PR2_Level_Generator
 				return generator.GetParamValue(name).ToString();
 		}
 
+		public async Task<int> GetLevelID(string title)
+		{
+			string result = await HttpGet("https://pr2hub.com/get_levels.php?token=" + login_token);
+			var collection = HttpUtility.ParseQueryString(result);
+
+			string levelID = "";
+			string index = "";
+			bool foundMatch = false;
+			for (int i = 0; i < collection.Count; i++)
+			{
+				if (collection.Keys[i].StartsWith("levelID"))
+				{
+					levelID = collection.GetValues(i)[0];
+					index = collection.Keys[i].Substring("levelID".Length);
+					if (foundMatch)
+						break;
+				}
+				else if (collection.Keys[i].StartsWith("title") && collection.GetValues(i)[0] == title)
+				{
+					foundMatch = true;
+					if (index == collection.Keys[i].Substring("title".Length))
+						break;
+				}
+			}
+
+			if (!foundMatch)
+				return -1;
+			else
+				return int.Parse(levelID);
+		}
+		public async Task<string> DeleteLevel(int id)
+		{
+			return await PostLoadHTTP("https://pr2hub.com/delete_level.php", "level_id=" + id + "&token=" + login_token);
+		}
 
 		private async Task<string> PostLoadHTTP(string url, string postData) // temp public
 		{
@@ -231,6 +266,22 @@ namespace PR2_Level_Generator
 			// Clean up the streams.
 			reader.Close();
 			dataStream.Close();
+			response.Close();
+			return responseFromServer;
+		}
+		private async Task<string> HttpGet(string url)
+		{
+			// Create a request using a URL that can receive a post. 
+			WebRequest request = WebRequest.Create(url);
+
+			// Get the response.
+			WebResponse response = await request.GetResponseAsync();
+			StreamReader reader = new StreamReader(response.GetResponseStream());
+			// Read the content.
+			string responseFromServer = await reader.ReadToEndAsync();
+
+			// Clean up the streams.
+			reader.Close();
 			response.Close();
 			return responseFromServer;
 		}
