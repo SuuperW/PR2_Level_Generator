@@ -355,6 +355,7 @@ namespace LevelGenBot
 			everybodyBotCommands.Add("get_lua_script", new BotCommand(GetLuaScript, 5));
 			everybodyBotCommands.Add("lua_script_list", new BotCommand(GetLuaScriptList));
 			everybodyBotCommands.Add("delete_lua_script", new BotCommand(DeleteLuaScript));
+			everybodyBotCommands.Add("delete_level", new BotCommand(DeleteLevel, 15));
 
 			trustedBotCommands = new SortedList<string, BotCommand>();
 			//trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
@@ -488,6 +489,29 @@ namespace LevelGenBot
 
 			await EditMessage(sendingGenerateMessage.Result, msg.Author.Username +
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
+			return true;
+		}
+		private async Task<bool> DeleteLevel(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await SendMessage(msg.Channel, msg.Author.Username + ", you didn't specify a level to delete.");
+				return false;
+			}
+
+			GenerationManager generationManager = new GenerationManager(null);
+			generationManager.login_token = pr2_token;
+			string levelTitle = args[1] + " [" + msg.Author.Username + "#" + msg.Author.Discriminator + "]";
+			int levelID = await generationManager.GetLevelID(levelTitle);
+
+			if (levelID == -1)
+			{
+				await SendMessage(msg.Channel, msg.Author.Username + ", the level `" + levelTitle + "` could not be found.");
+				return false;
+			}
+
+			await SendMessage(msg.Channel, msg.Author.Username + ", I got this message from pr2hub: `" +
+			  await generationManager.DeleteLevel(levelID) + "`.");
 			return true;
 		}
 		#endregion
