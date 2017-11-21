@@ -384,6 +384,7 @@ namespace LevelGenBot
 			helpStrings["topics"] = str.ToString();
 		}
 
+		#region "help"
 		private SortedDictionary<string, string> helpStrings;
 		private async Task<bool> SendHelpMessage(SocketMessage msg, params string[] args)
 		{
@@ -425,12 +426,14 @@ namespace LevelGenBot
 			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), "Here are the commands you can use: ```" + availableCommands + "```");
 			return true;
 		}
+		#endregion
 
+		#region "levels"
 		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
 			{
-				await SendGenerateHelpMessage(msg);
+				await SendMessage(msg.Channel, "You didn't specify a config file to use, silly " + msg.Author.Username + "!");
 				return false;
 			}
 
@@ -487,46 +490,9 @@ namespace LevelGenBot
 			  ", I got this message from pr2hub.com:\n`" + response + "`");
 			return true;
 		}
-		private async Task<bool> SendGenerateHelpMessage(SocketMessage msg)
-		{
-			await SendMessage(msg.Channel, msg.Author.Username +
-			  ", to generate a level, please use the following format:\n" +
-			  "```@me generate [name of config to use]```\n" +
-			  "To see a list of available configs, say `@me config_list`.");
+		#endregion
 
-			return true;
-		}
-
-		private async Task<bool> AddTrustedUser(SocketMessage msg, params string[] args)
-		{
-			int count = 0;
-			foreach (ITag tag in msg.Tags)
-			{
-				if (tag.Type == TagType.UserMention && tag.Key != BotID)
-				{
-					if (specialUsers.AddTrustedUser(tag.Key))
-						count++;
-				}
-			}
-
-			await SendMessage(msg.Channel, "Added " + count + " user(s) to trusted user list.");
-			return count != 0;
-		}
-		private async Task<bool> RemoveTrustedUser(SocketMessage msg, params string[] args)
-		{
-			int count = 0;
-			foreach (ITag tag in msg.Tags)
-			{
-				if (tag.Type == TagType.UserMention && tag.Key != BotID)
-				{
-					if (specialUsers.RemoveTrustedUser(tag.Key))
-						count++;
-				}
-			}
-
-			await SendMessage(msg.Channel, "Removed " + count + " user(s) from trusted user list.");
-			return count != 0;
-		}
+		#region "config and Lua"
 		private async Task<bool> SendConfigsListMessage(SocketMessage msg, params string[] args)
 		{
 			string message = "Here is a list of all available configs:\n" + GetFilesList(configsPath, msg.Author.Id);
@@ -678,6 +644,31 @@ namespace LevelGenBot
 			return null;
 		}
 
+		private async Task<bool> DeleteConfigFile(SocketMessage msg, params string[] args)
+		{
+			if (args.Length < 2)
+			{
+				await SendMessage(msg.Channel, "You didn't specify a config file to delete, silly " +
+				  msg.Author.Username + "!");
+				return false;
+			}
+			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
+			{
+				await SendMessage(msg.Channel, msg.Author.Username + ", you may only delete your own configs.");
+				return false;
+			}
+
+			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
+			if (File.Exists(filePath))
+			{
+				File.Delete(filePath);
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config '" + args[1] + "' has been deleted.");
+			}
+			else
+				await SendMessage(msg.Channel, msg.Author.Username + ", the config `" + args[1] + "` does not exist.");
+			return true;
+		}
+
 		private async Task<bool> GetLuaScriptList(SocketMessage msg, params string[] args)
 		{
 			string message = "Here is a list of all available lua scripts:\n" + GetFilesList(luaPath, msg.Author.Id);
@@ -781,30 +772,38 @@ namespace LevelGenBot
 				await SendMessage(msg.Channel, msg.Author.Username + ", the lua script `" + args[1] + "` does not exist.");
 			return true;
 		}
+		#endregion
 
-		private async Task<bool> DeleteConfigFile(SocketMessage msg, params string[] args)
+		#region "owner"
+		private async Task<bool> AddTrustedUser(SocketMessage msg, params string[] args)
 		{
-			if (args.Length < 2)
+			int count = 0;
+			foreach (ITag tag in msg.Tags)
 			{
-				await SendMessage(msg.Channel, "You didn't specify a config file to delete, silly " +
-				  msg.Author.Username + "!");
-				return false;
-			}
-			else if (!args[1].StartsWith("me/") && msg.Author.Id != specialUsers.Owner)
-			{
-				await SendMessage(msg.Channel, msg.Author.Username + ", you may only delete your own configs.");
-				return false;
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
+				{
+					if (specialUsers.AddTrustedUser(tag.Key))
+						count++;
+				}
 			}
 
-			string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
-			if (File.Exists(filePath))
+			await SendMessage(msg.Channel, "Added " + count + " user(s) to trusted user list.");
+			return count != 0;
+		}
+		private async Task<bool> RemoveTrustedUser(SocketMessage msg, params string[] args)
+		{
+			int count = 0;
+			foreach (ITag tag in msg.Tags)
 			{
-				File.Delete(filePath);
-				await SendMessage(msg.Channel, msg.Author.Username + ", the config '" + args[1] + "' has been deleted.");
+				if (tag.Type == TagType.UserMention && tag.Key != BotID)
+				{
+					if (specialUsers.RemoveTrustedUser(tag.Key))
+						count++;
+				}
 			}
-			else
-				await SendMessage(msg.Channel, msg.Author.Username + ", the config `" + args[1] + "` does not exist.");
-			return true;
+
+			await SendMessage(msg.Channel, "Removed " + count + " user(s) from trusted user list.");
+			return count != 0;
 		}
 
 		private async Task<bool> GTFO(SocketMessage msg, params string[] args)
@@ -812,12 +811,6 @@ namespace LevelGenBot
 			await SendMessage(msg.Channel, "I'm sorry you feel that way, " + msg.Author.Username +
 			  ". :(\nI guess I'll leave now. Bye guys!");
 			Disconnect(); // Do not await because DCing in the middle of the DiscordSocketClient's MessageReceived event causes problems.
-			return true;
-		}
-
-		private async Task<bool> SendBannedMessage(SocketMessage msg, params string[] args)
-		{
-			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), "You have been banned from this bot.");
 			return true;
 		}
 
@@ -862,7 +855,13 @@ namespace LevelGenBot
 			await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), errorPath);
 			return true;
 		}
+		#endregion
 
+		private async Task<bool> SendBannedMessage(SocketMessage msg, params string[] args)
+		{
+			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), "You have been banned from this bot.");
+			return true;
+		}
 		#endregion
 
 		private async Task<string> FileNameFromAttachment(SocketMessage msg)
