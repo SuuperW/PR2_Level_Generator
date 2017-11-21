@@ -411,11 +411,13 @@ namespace LevelGenBot
 				availableCommands.Append("\n" + kvp.Key); // \n first because first line tells Discord how to format
 			if (specialUsers.IsUserTrusted(msg.Author.Id))
 			{
+				// availableCommands.Append("\n\n----- Trusted User Commands -----"); un-comment when trusted users get a command again
 				foreach (KeyValuePair<string, BotCommand> kvp in trustedBotCommands)
 					availableCommands.Append("\n" + kvp.Key);
 			}
 			if (specialUsers.Owner == msg.Author.Id)
 			{
+				availableCommands.Append("\n\n----- Owner Commands -----");
 				foreach (KeyValuePair<string, BotCommand> kvp in ownerBotCommands)
 					availableCommands.Append("\n" + kvp.Key);
 			}
