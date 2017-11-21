@@ -9,6 +9,8 @@ using System.Diagnostics;
 
 using MoonSharp.Interpreter;
 
+using Newtonsoft.Json.Linq;
+
 namespace PR2_Level_Generator
 {
 	public class LuaGenerator : ILevelGenerator
@@ -107,7 +109,7 @@ namespace PR2_Level_Generator
 		{
 			if (GetParamNames().Contains(paramName))
 			{
-				Parameters[paramName] = DynValue.FromObject(script, Newtonsoft.Json.Linq.JToken.Parse(value).ToObject<object>());
+				Parameters[paramName] = DynValue.FromObject(script, JToken.Parse(value).ToObject<object>());
 				return true;
 			}
 			else
@@ -142,12 +144,14 @@ namespace PR2_Level_Generator
 
 		public string GetSaveString()
 		{
-			StringBuilder ret = new StringBuilder();
-			ret.Append(this.GetType().ToString());
+			JObject json = new JObject();
 			foreach (TablePair tp in Parameters.Pairs)
-				ret.Append("\n" + tp.Key.CastToString() + ": " + tp.Value.CastToString());
+			{
+				object value = JToken.Parse(tp.Value.ToString()).ToObject<object>();
+				json[tp.Key.CastToString()] = JToken.FromObject(value);
+			}
 
-			return ret.ToString();
+			return json.ToString();
 		}
 	}
 }

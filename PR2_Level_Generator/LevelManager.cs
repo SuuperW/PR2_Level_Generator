@@ -92,10 +92,7 @@ namespace PR2_Level_Generator
 			JObject json = new JObject();
 			json["Generator Type"] = (generator is LuaGenerator) ? (generator as LuaGenerator).ScriptName : generator.GetType().ToString();
 
-			json["Generator Params"] = new JObject();
-			string[] paramNames = generator.GetParamNames();
-			for (int i = 0; i < paramNames.Length; i++)
-				json["Generator Params"][paramNames[i]] = generator.GetParamValue(paramNames[i]);
+			json["Generator Params"] = JObject.Parse(generator.GetSaveString());
 
 			json["Map Settings"] = new JObject();
 			string[] settingNames = generator.Map.SettingNames;
