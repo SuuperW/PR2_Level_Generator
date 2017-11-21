@@ -436,12 +436,16 @@ namespace PR2_Level_Generator
 		char[] specialTextChars = new char[] { ';', ',', '`', '&', '#' };
 		public void PlaceText(string text, double x, double y, int color = 0, double width = 100, double height = 100)
 		{
-			if (artCodes[0].Length > 0)
-				artCodes[0] += ",";
-			x -= lastStampX;
-			y -= lastStampY;
+			if (text == null)
+				text = "";
 			for (int i = 0; i < specialTextChars.Length; i++)
 				text = text.Replace(specialTextChars[i].ToString(), "#" + (int)specialTextChars[i]);
+
+			if (artCodes[0].Length > 0)
+				artCodes[0] += ",";
+
+			x -= lastStampX;
+			y -= lastStampY;
 			artCodes[0] += x + ";" + y + ";t;" + text + ";" + color + ";" + width + ";" + height;
 			lastStampX += (int)x;
 			lastStampY += (int)y;
