@@ -501,13 +501,26 @@ namespace LevelGenBot
 
 			GenerationManager generationManager = new GenerationManager(null);
 			generationManager.login_token = pr2_token;
-			string levelTitle = args[1] + " [" + msg.Author.Username + "#" + msg.Author.Discriminator + "]";
-			int levelID = await generationManager.GetLevelID(levelTitle);
 
-			if (levelID == -1)
+			int levelID;
+			if (specialUsers.IsUserTrusted(msg.Author.Id) && args.Length > 2 && args[2] == "id")
 			{
-				await SendMessage(msg.Channel, msg.Author.Username + ", the level `" + levelTitle + "` could not be found.");
-				return false;
+				if (!int.TryParse(args[1], out levelID))
+				{
+					await SendMessage(msg.Channel, msg.Author.Username + ", I could not parse the level ID you gave me.");
+					return false;
+				}
+			}
+			else
+			{
+				string levelTitle = args[1] + " [" + msg.Author.Username + "#" + msg.Author.Discriminator + "]";
+				levelID = await generationManager.GetLevelID(levelTitle);
+
+				if (levelID == -1)
+				{
+					await SendMessage(msg.Channel, msg.Author.Username + ", the level `" + levelTitle + "` could not be found.");
+					return false;
+				}
 			}
 
 			await SendMessage(msg.Channel, msg.Author.Username + ", I got this message from pr2hub: `" +
