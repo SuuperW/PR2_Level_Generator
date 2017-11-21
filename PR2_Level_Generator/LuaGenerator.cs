@@ -85,16 +85,23 @@ namespace PR2_Level_Generator
 			script.Globals["SetParam"] = (Action<string, DynValue>)((n, v) => { parameters[n] = v; });
 			script.Globals["GetParam"] = (Func<string, DynValue>)((n) => {
 				if (parameters.ContainsKey(n)) return parameters[n];
-				else throw new ScriptRuntimeException("Attempted to get non-existent param '" + n + "'."; });
+				else throw new ScriptRuntimeException("Attempted to get non-existent param '" + n + "'."); });
 
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 
-			script.Globals["PlaceText"] = (Action<string, int, int>)((t, x, y) =>
-			{
+			script.Globals["PlaceText"] = (Action<string, int, int, int, double, double>)PlaceText;
+			script.Globals["ColorFromRGB"] = (Func<int, int, int, int>)ColorFromRGB;
+		}
+		private void PlaceText(string text, int x, int y, int color = 0, double width = 100, double height = 100)
+		{
 				if (Map.artCodes[0].Length > 0)
 					Map.artCodes[0] += ",";
-				Map.artCodes[0] += x + ";" + y + ";t;" + t + ";0;100;100";
-			});
+				Map.artCodes[0] += x + ";" + y + ";t;" + Uri.EscapeDataString(text) +
+				  ";" + color + ";" + width + ";" + height;
+		}
+		private int ColorFromRGB(int r, int g, int b)
+		{
+			return (byte)b | ((byte)g << 8) | ((byte)r << 16);
 		}
 		#endregion
 
