@@ -126,7 +126,7 @@ namespace PR2_Level_Generator
 			ILevelGenerator oldGen = generator;
 			Type t = Type.GetType(json["Generator Type"].ToString());
 
-			if (t != null && t.IsAssignableFrom(typeof(ILevelGenerator))) 
+			if (t != null && typeof(ILevelGenerator).IsAssignableFrom(t)) 
 				generator = Activator.CreateInstance(t) as ILevelGenerator;
 			else
 			{
