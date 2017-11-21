@@ -88,7 +88,7 @@ namespace PR2_Level_Generator
 		public JObject GetSaveObject()
 		{
 			JObject json = new JObject();
-			json["Generator Type"] = generator.GetType().ToString();
+			json["Generator Type"] = (generator is LuaGenerator) ? (generator as LuaGenerator).ScriptName : generator.GetType().ToString();
 
 			json["Generator Params"] = new JObject();
 			string[] paramNames = generator.GetParamNames();
@@ -135,13 +135,15 @@ namespace PR2_Level_Generator
 					return "invalid generator type; lua disabled";
 
 				string filePath = Path.Combine(luaPath, json["Generator Type"].ToString().Replace("../", "")); // disallow ../ for security reasons
-				if (File.Exists(filePath))
+				// Ensure file is in the luaPath directory, and that it exists.
+				if (Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(luaPath)) && File.Exists(filePath))
 				{
 					LuaGenerator luaGenerator = new LuaGenerator();
 					string result = luaGenerator.SetLua(File.ReadAllText(filePath));
 					if (result != null)
 						return "Lua error: " + result;
 					generator = luaGenerator;
+					luaGenerator.ScriptName = json["Generator Type"].ToString().Replace("../", "");
 				}
 				else
 					return "invalid generator type; could not find lua file";

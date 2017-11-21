@@ -16,6 +16,7 @@ namespace PR2_Level_Generator
 		public int LastSeed { get; } = 0;
 
 		private Script script;
+		public string ScriptName;
 		private string _luaScript;
 		public string LuaScript { get => _luaScript; }
 		public string SetLua(string value)
