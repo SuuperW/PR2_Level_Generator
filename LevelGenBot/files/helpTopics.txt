@@ -18,6 +18,7 @@
 	"creating_configs": "To create your own config file, first download a config file by using the `get_config [config_name]` command. To see the config file contents directly, rather than being given a file, append the `text` parameter to the command, e.g. `get_config default text`.
 \nOnce you have a config file, open it with a text editor and modify the params/settings values it contains. Then, save the file with whatever name you want your config to have. Finally, upload the file with a message using the command `set_config`. If your config file is valid, you will now be able to use it when generating levels by giving the config name as `me/[your_config's_name]` in the generate command. It will also show up in the list of available configs when you use the `config_list` command (with the required 'me/' included).",
 
-	"lua": "This bot can use a Lua script to generate levels. To set a config file to use a Lua script, set its `Generator Type` to the name of the Lua script. You can upload your own Lua scripts using the `set_lua_script` command. When creating a config file to use a Lua script you have uploaded, ensure that the Generator Type includes `me/`, to match the name given by the `lua_script_list` command. (The bot will replace the 'me' with your Discord ID, which will also work.)
-\nFor example config and Lua scripts, use `get_config lua_example` and `get_lua_script example`."
+	"lua": "This bot can use a Lua script to generate levels. You can upload your own Lua scripts using the `set_lua_script` command. If your Lua script is valid, the bot will give you a config file which can be used to generate levels with the Lua script. (Lua scripts do not replace config files; they only replace the built-in level generation algoritms.)
+\nFor an example Lua script, use `get_lua_script example`.
+\nNote: Not all standard Lua libraries or functions are available."
 }
