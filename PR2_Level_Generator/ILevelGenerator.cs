@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
+using Newtonsoft.Json.Linq;
+
 namespace PR2_Level_Generator
 {
 	public interface ILevelGenerator
@@ -14,6 +16,6 @@ namespace PR2_Level_Generator
 		int LastSeed { get; }
 		Task<string> GenerateMap(CancellationTokenSource cts);
 
-		string GetSaveString();
+		JObject GetSaveObject();
 	}
 }

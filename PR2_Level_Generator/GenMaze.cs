@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Newtonsoft.Json.Linq;
+
 namespace PR2_Level_Generator
 {
     class GenMaze : ILevelGenerator
@@ -550,16 +552,13 @@ namespace PR2_Level_Generator
             ArtStr = str.ToString();
         }
 
-		public string GetSaveString()
+		public JObject GetSaveObject()
 		{
-			StringBuilder ret = new StringBuilder();
-			ret.Append(this.GetType().ToString());
+			JObject json = new JObject();
 			foreach (KeyValuePair<string, double> kvp in parameters)
-			{
-				ret.Append("\n" + kvp.Key + ":" + kvp.Value);
-			}
+				json[kvp.Key] = JToken.FromObject(kvp.Value);
 
-			return ret.ToString();
+			return json;
 		}
 
     }

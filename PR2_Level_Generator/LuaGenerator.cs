@@ -142,7 +142,7 @@ namespace PR2_Level_Generator
 			}
 		}
 
-		public string GetSaveString()
+		public JObject GetSaveObject()
 		{
 			JObject json = new JObject();
 			foreach (TablePair tp in Parameters.Pairs)
@@ -151,7 +151,7 @@ namespace PR2_Level_Generator
 				json[tp.Key.CastToString()] = JToken.FromObject(value);
 			}
 
-			return json.ToString();
+			return json;
 		}
 	}
 }
