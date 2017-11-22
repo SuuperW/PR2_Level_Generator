@@ -1,0 +1,30 @@
+{
+  "Generator Type": "PR2_Level_Generator.GenSimpleRace, PR2_Level_Generator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+  "Generator Params": {
+    "block_type": 0.0,
+    "border_type": -1.0,
+    "easy": 0.0,
+    "floor_thickness": 1.0,
+    "height": 9.0,
+    "length": 160.0,
+    "max_fill": 5.0,
+    "min_fill": 2.0,
+    "nice_ending": 0.0,
+    "seed": 0.0
+  },
+  "Map Settings": {
+    "cowboyChance": "5",
+    "credits": "PR2_Level_Generator",
+    "gameMode": "race",
+    "gravity": "1",
+    "hasPass": "1",
+    "items": "1`2`3`4`5`6`7`8`9",
+    "live": "0",
+    "max_time": "120",
+    "min_level": "0",
+    "note": "",
+    "password": "",
+    "song": "",
+    "title": "default"
+  }
+}

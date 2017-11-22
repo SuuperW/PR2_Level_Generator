@@ -1,0 +1,22 @@
+{
+  "Generator Type": "example",
+  "Generator Params": {
+    "distanceBetween": 2,
+    "exampleParam": "hello"
+  },
+  "Map Settings": {
+    "cowboyChance": "5",
+    "credits": "PR2_Level_Generator",
+    "gameMode": "race",
+    "gravity": "1",
+    "hasPass": 1,
+    "items": "1`2`3`4`5`6`7`8`9",
+    "live": 0,
+    "max_time": "120",
+    "min_level": "0",
+    "note": "",
+    "password": "",
+    "song": "",
+    "title": "example"
+  }
+}

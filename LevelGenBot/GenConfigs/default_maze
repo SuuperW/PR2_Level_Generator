@@ -1,0 +1,38 @@
+{
+  "Generator Type": "PR2_Level_Generator.GenMaze",
+  "Generator Params": {
+    "bomb": 5.0,
+    "bomb_fill": 5.0,
+    "branch": 0.9,
+    "brick": 20.0,
+    "brick_fill": 33.0,
+    "circle": 0.0,
+    "crumble": 20.0,
+    "crumble_fill": 30.0,
+    "happys": 0.0,
+    "items": 0.0,
+    "move": 20.0,
+    "move_fill": 10.0,
+    "seed": 0.0,
+    "size": 9.0,
+    "sq_size": 8.0,
+    "vanish": 20.0,
+    "vanish_fill": 33.0,
+    "water": 25.0,
+    "water_fill": 40.0
+  },
+  "Map Settings": {
+    "cowboyChance": "5",
+    "credits": "PR2_Level_Generator",
+    "gameMode": "race",
+    "gravity": "1",
+    "hasPass": "1",
+    "live": "0",
+    "max_time": "120",
+    "min_level": "0",
+    "note": "",
+    "password": "",
+    "song": "",
+    "title": "Maze"
+  }
+}

@@ -1,0 +1,49 @@
+-- Your Lua script must contain a function named "Generate".
+-- The bot will execute the file, then apply the config settings, then execute the Generate function.
+-- You can indicate that generation has failed by returning a string value. Returning nothing or any other type indicates success.
+function Generate()
+	local distanceBetween = params.distanceBetween;
+	if (tonumber(distanceBetween) == 0) then
+		return "distanceBetween cannot be zero";
+	end
+	
+	local xPos = 0;
+	for i = 0, 9 do
+		-- PlaceBlock(x, y, blockID) [This generator has a limit of 100,000 blocks.]
+		-- blockIDs for all block types are listed at the end of this example script
+		PlaceBlock(xPos, 1, BlockID.Basic1);
+		xPos = xPos + distanceBetween;
+	end
+	
+	-- PlaceText( text_to_place, x_position, y_position [, color [, width [, height]]] )
+	PlaceText(distanceBetween, 50, 70, 0xFF0000, 200, 150);
+	PlaceText(params["exampleParam"], 50, -30);
+	-- You can also get a color value from RGB with ColorFromRGB(red, green, blue)
+	
+	--[[	--- Additional functions ---
+	
+	---- Returns the block ID of the block at the given location. If no block exists there, returns -1.
+	GetBlock(x, y)
+	
+	---- Removes all blocks of the given type from the map.
+	RemoveAllBlocks(type)
+	
+	---- Rectangles have a maximum size of 100 by 100. Giving more than one block type will result in a checker-board style pattern. Use -1 as one of the block types to skip placing those blocks.
+	FillRectangle(x, y, width, height, blockType1 [, blockType2 ...])
+	PlaceRectangle(x, y, width, height, blockType1 [, blockType2 ...])
+	ClearRectangle(x, y, width, height)
+	
+	]]--
+end
+
+-- All values in the params table are available to be set in the config file. The values given here are used as default values.
+-- A 'seed' parameter will be created automatically. This will be used for generating random numbers with math.random(). If seed is left at its default value (0) then it will be automatically set.
+params = {
+	distanceBetween = 2,
+	exampleParam = "hello"
+};
+
+--[[ This table is automatically created for every Lua script.
+BlockID = {	Basic1 = 0,	Basic2 = 1,	Basic3 = 2,	Basic4 = 3,	Brick = 4,	Down = 5,	Up = 6,	Left = 7,	Right = 8,	Mine = 9,	Item = 10,	Player1 = 11,	Player2 = 12,	Player3 = 13,	Player4 = 14,	Ice = 15,	Finish = 16,	Crumble = 17,	Vanish = 18,	Move = 19,	Water = 20,	GravRight = 21,	GravLeft = 22,	Push = 23,	Net = 24,	InfItem = 25,	Happy = 26,	Sad = 27,	Heart = 28,	Time = 29,	Egg = 30
+};
+]]--
