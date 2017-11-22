@@ -93,6 +93,7 @@ namespace PR2_Level_Generator
 		{
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
+			script.Globals["PlaceRectangle"] = (Action<int, int, int, int, int[]>)PlaceRectangle;
 
 			script.Globals["PlaceText"] = (Action<string, double, double, int, double, double>)Map.PlaceText;
 			script.Globals["ColorFromRGB"] = (Func<int, int, int, int>)ColorFromRGB;
@@ -142,7 +143,7 @@ namespace PR2_Level_Generator
 		}
 		private void FillRectangle(int x, int y, int width, int height, params int[] blockTypes)
 		{
-			if (blockTypes.Length == 0)
+			if (!VerifyRectangleParams(width, height, blockTypes))
 				return;
 
 			for (int iX = x; iX < x + width; iX++)
@@ -154,6 +155,44 @@ namespace PR2_Level_Generator
 					currentType = ++currentType % blockTypes.Length;
 				}
 			}
+		}
+		private void PlaceRectangle(int x, int y, int width, int height, params int[] blockTypes)
+		{
+			if (!VerifyRectangleParams(width, height, blockTypes))
+				return;
+
+			// left/right
+			for (int iX = x; iX < x + width; iX += Math.Max(1, width - 1)) // Math.Max so that width 1 won't loop
+			{
+				int currentType = (iX - x) % blockTypes.Length;
+				for (int iY = y; iY < y + height; iY++)
+				{
+					Map.AddBlock(iX, iY, blockTypes[currentType]);
+					currentType = ++currentType % blockTypes.Length;
+				}
+			}
+
+			// top/bottom
+			for (int iY = y; iY < y + height; iY += Math.Max(1, height - 1))
+			{
+				int currentType = (iY - y + 1) % blockTypes.Length;
+				for (int iX = x + 1; iX < x + width - 1; iX++)
+				{
+					Map.AddBlock(iX, iY, blockTypes[currentType]);
+					currentType = ++currentType % blockTypes.Length;
+				}
+			}
+		}
+		private bool VerifyRectangleParams(int width, int height, params int[] blockTypes)
+		{
+			if (blockTypes.Length == 0 || width < 1 || height < 1)
+				return false;
+
+			// Don't allow giant rectangles; they'd take too many resources
+			if (width > 100 || height > 100)
+				return false;
+
+			return true;
 		}
 		#endregion
 
