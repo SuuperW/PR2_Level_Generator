@@ -30,7 +30,11 @@ namespace PR2_Level_Generator
 			string oldNote = SetLevelNote();
 			string LData = GetLevelData() + "&token=" + login_token;
 			Map.SetSetting("note", oldNote);
-			return await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
+
+			if (LData.Length > 1000000)
+				return "Level data is too large; pr2hub will only accept levels less than ~1MB.";
+			else
+				return await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
 		}
 		public bool SaveLevel(string path)
 		{
