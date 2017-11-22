@@ -137,10 +137,12 @@ namespace PR2_Level_Generator
 
 			return ret;
 		}
+
 		private int ColorFromRGB(int r, int g, int b)
 		{
 			return (byte)b | ((byte)g << 8) | ((byte)r << 16);
 		}
+
 		private void FillRectangle(int x, int y, int width, int height, params int[] blockTypes)
 		{
 			if (!VerifyRectangleParams(width, height, blockTypes))
@@ -151,7 +153,8 @@ namespace PR2_Level_Generator
 				int currentType = (iX - x) % blockTypes.Length;
 				for (int iY = y; iY < y + height; iY++)
 				{
-					Map.AddBlock(iX, iY, blockTypes[currentType]);
+					if (blockTypes[currentType] > 0)
+						Map.AddBlock(iX, iY, blockTypes[currentType]);
 					currentType = ++currentType % blockTypes.Length;
 				}
 			}
@@ -167,7 +170,8 @@ namespace PR2_Level_Generator
 				int currentType = (iX - x) % blockTypes.Length;
 				for (int iY = y; iY < y + height; iY++)
 				{
-					Map.AddBlock(iX, iY, blockTypes[currentType]);
+					if (blockTypes[currentType] > 0)
+						Map.AddBlock(iX, iY, blockTypes[currentType]);
 					currentType = ++currentType % blockTypes.Length;
 				}
 			}
