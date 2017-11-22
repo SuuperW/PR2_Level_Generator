@@ -40,6 +40,7 @@ namespace PR2_Level_Generator
 		private Block firstBlock;
 		private Block lastBlock;
 		public int BlockCount = 0;
+		public int MaximumBlockCount = 100000;
 
 		int MinX = 0;
 		int MaxX = 0;
@@ -219,6 +220,9 @@ namespace PR2_Level_Generator
 		// Add a block to the level (increase BlockCount)
 		public void AddBlock(int X, int Y, int T)
 		{
+			if (BlockCount >= MaximumBlockCount)
+				return;
+
 			CreateIndex(X, Y);
 			// So I will not have to type X - XStart over and over
 			int BX = X - XStart;
