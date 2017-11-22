@@ -56,7 +56,7 @@ namespace PR2_Level_Generator
 		{
 			// Append parameters to the note.
 			string oldSeed = null;
-			if (generator.GetParamNames().Contains("Seed"))
+			if (generator.GetParamNames().Contains("seed"))
 			{
 				oldSeed = generator.GetParamValue("seed");
 				generator.SetParamValue("seed", generator.LastSeed.ToString());

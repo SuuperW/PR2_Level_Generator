@@ -45,8 +45,8 @@ namespace PR2_Level_Generator
 					return "initialization timed out";
 
 				// Random seed
-				if (!GetParamNames().Contains("seed"))
-					SetParamValue("seed", "0");
+				if (Parameters != null && !GetParamNames().Contains("seed"))
+					Parameters["seed"] = 0;
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
@@ -159,7 +159,10 @@ namespace PR2_Level_Generator
 
 		public string[] GetParamNames()
 		{
-			return Parameters.Keys.Convert<string>(DataType.String).ToArray();
+			if (Parameters != null)
+				return Parameters.Keys.Convert<string>(DataType.String).ToArray();
+			else
+				return new string[0];
 		}
 
 		public string GetParamValue(string paramName)
@@ -169,7 +172,7 @@ namespace PR2_Level_Generator
 
 		public bool SetParamValue(string paramName, string value)
 		{
-			if (GetParamNames().Contains(paramName))
+			if (Parameters != null && GetParamNames().Contains(paramName))
 			{
 				Parameters[paramName] = DynValue.FromObject(script, JToken.Parse(value).ToObject<object>());
 				return true;
