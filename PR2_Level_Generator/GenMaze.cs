@@ -198,7 +198,7 @@ namespace PR2_Level_Generator
 
             // Add the stuff onto DataStr (m3, BG, etc.)
             Map.BGC = 0x00111111;
-            Map.artCodes[8] = ArtStr;
+            Map.SetArtLayerString(8, ArtStr);
 
             Console.WriteLine("Map Generated");
 			return Task.FromResult<string>(null);

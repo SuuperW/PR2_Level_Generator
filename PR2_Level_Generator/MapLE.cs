@@ -30,7 +30,7 @@ namespace PR2_Level_Generator
 			settings.Add("password", "");
 
 			for (int i = 0; i < artCodes.Length; i++)
-				artCodes[i] = "";
+				artCodes[i] = new StringBuilder();
 		}
 
 		// Block array(s)
@@ -208,7 +208,11 @@ namespace PR2_Level_Generator
 		#endregion
 
 		// Art
-		public string[] artCodes = new string[10];
+		private StringBuilder[] artCodes = new StringBuilder[10];
+		public void SetArtLayerString(int layerID, string str)
+		{
+			artCodes[layerID] = new StringBuilder(str);
+		}
 
 		// Options that are not in PR2
 		public bool mapless = false;
@@ -446,11 +450,11 @@ namespace PR2_Level_Generator
 				text = text.Replace(specialTextChars[i].ToString(), "#" + (int)specialTextChars[i]);
 
 			if (artCodes[0].Length > 0)
-				artCodes[0] += ",";
+				artCodes[0].Append(",");
 
 			x -= lastStampX;
 			y -= lastStampY;
-			artCodes[0] += x + ";" + y + ";t;" + text + ";" + color + ";" + width + ";" + height;
+			artCodes[0].Append(x + ";" + y + ";t;" + text + ";" + color + ";" + width + ";" + height);
 			lastStampX += (int)x;
 			lastStampY += (int)y;
 		}
@@ -608,30 +612,36 @@ namespace PR2_Level_Generator
 			if (mapless)
 				BlockD += ",100000000;-100000000;0";
 
-			string Data = "m3`" + Convert.ToString(BGC, 16) + "`" + BlockD + "`";
+			StringBuilder Data = new StringBuilder("m3`" + Convert.ToString(BGC, 16) + "`" + BlockD + "`");
 			if (keepArt)
 			{
 				// Layers 1-3
 				for (int i = 0; i < 6; i++)
-					Data += artCodes[i] + "`";
-				Data += (bgID == -1 ? -1 : bgID + 200) + "`"; ; // I think. TODO: Verify.
+				{
+					Data.Append(artCodes[i]);
+					Data.Append("`");
+				}
+				Data.Append((bgID == -1 ? -1 : bgID + 200) + "`"); // I think. TODO: Verify.
 
 				// Layers 00 and 0
 				for (int i = 6; i < 10; i++)
-					Data += artCodes[i] + "`";
+				{
+					Data.Append(artCodes[i]);
+					Data.Append("`");
+				}
 			}
 			else
 			{
-				Data += "``````";
-				Data += bgID == -1 ? -1 : bgID + 200;
-				Data += "````";
+				Data.Append("``````");
+				Data.Append(bgID == -1 ? -1 : bgID + 200);
+				Data.Append("````");
 			}
 
-			return Data;
+			return Data.ToString();
 		}
 		private string GetBlockData()
 		{
-			StringBuilder ret = new StringBuilder("");
+			StringBuilder ret = new StringBuilder(BlockCount * 5);
 			Block cBlock = firstBlock;
 			int lastX = 0;
 			int lastY = 0;
@@ -686,7 +696,7 @@ namespace PR2_Level_Generator
 			// Set arts 1-3
 			for (int i = 0; i < 6; i++)
 			{
-				artCodes[i] = Codes[i + 3];
+				artCodes[i] = new StringBuilder(Codes[i + 3]);
 			}
 			if (Codes[1].Length >= 6)
 				BGC = Convert.ToUInt32(Codes[1], 16);
@@ -701,7 +711,7 @@ namespace PR2_Level_Generator
 			if (Codes.Length > 10)
 			{
 				for (int i = 6; i < 10; i++)
-					artCodes[i] = Codes[i + 4];
+					artCodes[i] = new StringBuilder(Codes[i + 4]);
 			}
 
 			// get blocks from data
