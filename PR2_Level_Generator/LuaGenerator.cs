@@ -157,7 +157,7 @@ namespace PR2_Level_Generator
 				int currentType = (iX - x) % blockTypes.Length;
 				for (int iY = y; iY < y + height; iY++)
 				{
-					if (blockTypes[currentType] > 0)
+					if (blockTypes[currentType] >= 0)
 						Map.AddBlock(iX, iY, blockTypes[currentType]);
 					currentType = ++currentType % blockTypes.Length;
 				}
@@ -174,7 +174,7 @@ namespace PR2_Level_Generator
 				int currentType = (iX - x) % blockTypes.Length;
 				for (int iY = y; iY < y + height; iY++)
 				{
-					if (blockTypes[currentType] > 0)
+					if (blockTypes[currentType] >= 0)
 						Map.AddBlock(iX, iY, blockTypes[currentType]);
 					currentType = ++currentType % blockTypes.Length;
 				}
