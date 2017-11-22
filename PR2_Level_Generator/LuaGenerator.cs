@@ -16,7 +16,7 @@ namespace PR2_Level_Generator
 	public class LuaGenerator : ILevelGenerator
 	{
 		public MapLE Map { get; set; }
-		public int LastSeed { get; } = 0;
+		public int LastSeed { get; private set; } = 0;
 
 		private Script script;
 		public string ScriptName;
@@ -28,7 +28,7 @@ namespace PR2_Level_Generator
 			Map = new MapLE();
 
 			script = new Script(CoreModules.Preset_HardSandbox);
-			ExposeFunctions();
+			ExposeFunctionsaAndTables();
 			RemoveFunctionsWithCallbacks();
 			try
 			{
@@ -43,6 +43,10 @@ namespace PR2_Level_Generator
 				DynValue result = coroutine.Resume();
 				if (result.Type == DataType.YieldRequest)
 					return "initialization timed out";
+
+				// Random seed
+				if (!GetParamNames().Contains("seed"))
+					SetParamValue("seed", "0");
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
@@ -64,8 +68,11 @@ namespace PR2_Level_Generator
 			script.Globals.Get("table").Table["sort"] = (Action<Table>)((t) => { script.Call(sort, t); });
 
 			DynValue gsub = script.Globals.Get("string").Table.Get("gsub");
-			script.Globals.Get("string").Table["gsub"] = (Func<DynValue, DynValue, DynValue, DynValue, DynValue>)((s, p, r, n) => {
-				if (p.Function == null) return script.Call(gsub, s, p, r, n); else return null; });
+			script.Globals.Get("string").Table["gsub"] = (Func<DynValue, DynValue, DynValue, DynValue, DynValue>)((s, p, r, n) =>
+			{
+				if (p.Function == null) return script.Call(gsub, s, p, r, n);
+				else return null;
+			});
 		}
 
 		private Table Parameters => script.Globals.Get("params").Table;
@@ -82,16 +89,71 @@ namespace PR2_Level_Generator
 		}
 
 		#region "lua functions"
-		private void ExposeFunctions()
+		private void ExposeFunctionsaAndTables()
 		{
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
+			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
 
 			script.Globals["PlaceText"] = (Action<string, double, double, int, double, double>)Map.PlaceText;
 			script.Globals["ColorFromRGB"] = (Func<int, int, int, int>)ColorFromRGB;
+
+			script.Globals["BlockID"] = CreateBlockIDTable();
+		}
+		private Table CreateBlockIDTable()
+		{
+			Table ret = new Table(script);
+			ret.Set("Basic1", DynValue.NewNumber(BlockID.BB0));
+			ret.Set("Basic2", DynValue.NewNumber(BlockID.BB1));
+			ret.Set("Basic3", DynValue.NewNumber(BlockID.BB2));
+			ret.Set("Basic4", DynValue.NewNumber(BlockID.BB3));
+			ret.Set("Brick", DynValue.NewNumber(4));
+			ret.Set("Down", DynValue.NewNumber(5));
+			ret.Set("Up", DynValue.NewNumber(6));
+			ret.Set("Left", DynValue.NewNumber(7));
+			ret.Set("Right", DynValue.NewNumber(8));
+			ret.Set("Mine", DynValue.NewNumber(9));
+			ret.Set("Item", DynValue.NewNumber(10));
+			ret.Set("Player1", DynValue.NewNumber(11));
+			ret.Set("Player2", DynValue.NewNumber(12));
+			ret.Set("Player3", DynValue.NewNumber(13));
+			ret.Set("Player4", DynValue.NewNumber(14));
+			ret.Set("Ice", DynValue.NewNumber(15));
+			ret.Set("Finish", DynValue.NewNumber(16));
+			ret.Set("Crumble", DynValue.NewNumber(17));
+			ret.Set("Vanish", DynValue.NewNumber(18));
+			ret.Set("Move", DynValue.NewNumber(19));
+			ret.Set("Water", DynValue.NewNumber(20));
+			ret.Set("GravRight", DynValue.NewNumber(21));
+			ret.Set("GravLeft", DynValue.NewNumber(22));
+			ret.Set("Push", DynValue.NewNumber(23));
+			ret.Set("Net", DynValue.NewNumber(24));
+			ret.Set("InfiniteItem", DynValue.NewNumber(25));
+			ret.Set("Happy", DynValue.NewNumber(26));
+			ret.Set("Sad", DynValue.NewNumber(27));
+			ret.Set("Heart", DynValue.NewNumber(28));
+			ret.Set("Time", DynValue.NewNumber(29));
+			ret.Set("Egg", DynValue.NewNumber(30));
+
+			return ret;
 		}
 		private int ColorFromRGB(int r, int g, int b)
 		{
 			return (byte)b | ((byte)g << 8) | ((byte)r << 16);
+		}
+		private void FillRectangle(int x, int y, int width, int height, params int[] blockTypes)
+		{
+			if (blockTypes.Length == 0)
+				return;
+
+			for (int iX = x; iX < x + width; iX++)
+			{
+				int currentType = (iX - x) % blockTypes.Length;
+				for (int iY = y; iY < y + height; iY++)
+				{
+					Map.AddBlock(iX, iY, blockTypes[currentType]);
+					currentType = ++currentType % blockTypes.Length;
+				}
+			}
 		}
 		#endregion
 
@@ -119,27 +181,36 @@ namespace PR2_Level_Generator
 		public Task<string> GenerateMap(CancellationTokenSource cts)
 		{
 			Map.ClearBlocks();
+
+			if (!int.TryParse(GetParamValue("seed"), out int seed) || seed == 0)
+				LastSeed = Environment.TickCount;
+			else
+				LastSeed = seed;
+			script.DoString("math.randomseed(" + LastSeed + ");");
+
+			Coroutine coroutine = script.CreateCoroutine(script.Globals["Generate"]).Coroutine;
+			coroutine.AutoYieldCounter = 50000;
+
+			DynValue result = DynValue.NewYieldReq(null);
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+
 			try
 			{
-				Coroutine coroutine = script.CreateCoroutine(script.Globals["Generate"]).Coroutine;
-				coroutine.AutoYieldCounter = 50000;
-
-				DynValue result = DynValue.NewYieldReq(null);
-				Stopwatch stopwatch = new Stopwatch();
-				stopwatch.Start();
 				while (result.Type == DataType.YieldRequest && !cts.IsCancellationRequested)
 					result = coroutine.Resume();
-
-				if (cts.IsCancellationRequested)
-					return Task.FromResult("generation timed out");
-
-				Console.WriteLine("Level generated in " + stopwatch.ElapsedMilliseconds + "ms");
-				return Task.FromResult(result.String);
 			}
 			catch (InterpreterException ex) // base exception type for MoonSharp
 			{
 				return Task.FromResult("Lua error: " + ex.DecoratedMessage);
 			}
+
+			if (cts.IsCancellationRequested)
+				return Task.FromResult("generation timed out");
+
+			Console.WriteLine("Level generated in " + stopwatch.ElapsedMilliseconds + "ms");
+			return Task.FromResult(result.String);
+
 		}
 
 		public JObject GetSaveObject()
