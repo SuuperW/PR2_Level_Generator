@@ -208,7 +208,7 @@ namespace PR2_Level_Generator
 		#endregion
 
 		// Art
-		private StringBuilder[] artCodes = new StringBuilder[10];
+		public StringBuilder[] artCodes = new StringBuilder[10];
 		public void SetArtLayerString(int layerID, string str)
 		{
 			artCodes[layerID] = new StringBuilder(str);
