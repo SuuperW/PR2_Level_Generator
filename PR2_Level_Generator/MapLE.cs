@@ -460,60 +460,50 @@ namespace PR2_Level_Generator
 		}
 
 		// Make sure a given index exists in the Blocks list
-		private void CreateIndex(int X, int Y)
+		private void CreateIndex(int x, int y)
 		{
-			int BX = X - XStart;
-			// if ( this is for the very first block
+			// if this is for the very first block
 			if (Blocks.Count == 0 || Blocks[0] == null)
 			{
-				XStart = X;
-				BX = X - XStart;
+				XStart = x;
 				Blocks = new List<List<Block>>();
 				Blocks.Add(new List<Block>());
 				YStart = new List<int>();
-				YStart.Add(Y);
+				YStart.Add(y);
 			}
-			// Check if X is out of bounds
-			if (BX < 0)
-			{ // new X is less than XStart
-				for (int i = BX; i < 0; i++)
-				{
-					Blocks.Insert(0, null);
-					YStart.Insert(0, 0);
-				}
-				XStart = X;
+
+			int bX = x - XStart;
+			if (bX < 0)
+			{
+				Blocks.InsertRange(0, new List<Block>[-bX]);
+				YStart.InsertRange(0, new int[-bX]);
+				XStart = x;
+				bX = x - XStart;
 			}
-			else if (BX > Blocks.Count - 1)
-			{ // X is higher than max X in the array
-				for (int i = Blocks.Count; i <= BX; i++)
+			else if (bX > Blocks.Count - 1)
+			{
+				for (int i = Blocks.Count; i <= bX; i++)
 				{
 					Blocks.Add(null);
-					YStart.Add(Y);
+					YStart.Add(y);
 				}
 			}
-			// BX could have changed - add a BY
-			BX = X - XStart;
-			int BY = Y - YStart[BX];
-			// Make sure list is not nothing
-			if (Blocks[BX] == null)
+			if (Blocks[bX] == null)
 			{
-				Blocks[BX] = new List<Block>();
-				YStart[BX] = Y;
-				BY = 0;
+				Blocks[bX] = new List<Block>();
+				YStart[bX] = y;
 			}
-			// Check if Y is out of bounds
-			if (BY < 0)
-			{ // new Y is less than YStart
-				for (int i = BY; i < 0; i++)
-					Blocks[BX].Insert(0, null);
-				YStart[BX] = Y;
+
+			int bY = y - YStart[bX];
+			if (bY < 0)
+			{
+				Blocks[bX].InsertRange(0, new Block[-bY]);
+				YStart[bX] = y;
 			}
-			else if (BY > Blocks[BX].Count - 1)
+			else if (bY > Blocks[bX].Count - 1)
 			{ // Y is higher than max Y in the array
-				for (int i = Blocks[BX].Count; i <= BY; i++)
-				{
-					Blocks[BX].Add(null);
-				}
+				for (int i = Blocks[bX].Count; i <= bY; i++)
+					Blocks[bX].Add(null);
 			}
 		}
 		// Check if a block exists
