@@ -92,6 +92,8 @@ namespace PR2_Level_Generator
 		private void ExposeFunctionsaAndTables()
 		{
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
+			script.Globals["GetBlock"] = (Func<int, int, int>)GetBlock;
+
 			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
 			script.Globals["PlaceRectangle"] = (Action<int, int, int, int, int[]>)PlaceRectangle;
 			script.Globals["ClearRectangle"] = (Action<int, int, int, int>)ClearRectangle;
@@ -209,6 +211,12 @@ namespace PR2_Level_Generator
 				return false;
 
 			return true;
+		}
+
+		private int GetBlock(int x, int y)
+		{
+			int t = Map.GetBlock(x, y).T;
+			return t == 99 ? -1 : t;
 		}
 		#endregion
 
