@@ -93,6 +93,7 @@ namespace PR2_Level_Generator
 		{
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 			script.Globals["GetBlock"] = (Func<int, int, int>)GetBlock;
+			script.Globals["RemoveAllBlocks"] = (Action<int>)RemoveAllBlocks;
 
 			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
 			script.Globals["PlaceRectangle"] = (Action<int, int, int, int, int[]>)PlaceRectangle;
@@ -217,6 +218,10 @@ namespace PR2_Level_Generator
 		{
 			int t = Map.GetBlock(x, y).T;
 			return t == 99 ? -1 : t;
+		}
+		private void RemoveAllBlocks(int type)
+		{
+			Map.ClearType(type);
 		}
 		#endregion
 
