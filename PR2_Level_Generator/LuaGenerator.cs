@@ -235,7 +235,10 @@ namespace PR2_Level_Generator
 
 		public string GetParamValue(string paramName)
 		{
-			return Parameters.Get(paramName).CastToString();
+			if (Parameters != null)
+				return Parameters.Get(paramName).CastToString();
+			else
+				return null;
 		}
 
 		public bool SetParamValue(string paramName, string value)
@@ -287,10 +290,13 @@ namespace PR2_Level_Generator
 		public JObject GetSaveObject()
 		{
 			JObject json = new JObject();
-			foreach (TablePair tp in Parameters.Pairs)
+			if (Parameters != null)
 			{
-				object value = JToken.Parse(tp.Value.ToString()).ToObject<object>();
-				json[tp.Key.CastToString()] = JToken.FromObject(value);
+				foreach (TablePair tp in Parameters.Pairs)
+				{
+					object value = JToken.Parse(tp.Value.ToString()).ToObject<object>();
+					json[tp.Key.CastToString()] = JToken.FromObject(value);
+				}
 			}
 
 			return json;
