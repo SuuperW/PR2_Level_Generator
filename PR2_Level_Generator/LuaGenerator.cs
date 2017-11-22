@@ -94,6 +94,7 @@ namespace PR2_Level_Generator
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
 			script.Globals["PlaceRectangle"] = (Action<int, int, int, int, int[]>)PlaceRectangle;
+			script.Globals["ClearRectangle"] = (Action<int, int, int, int>)ClearRectangle;
 
 			script.Globals["PlaceText"] = (Action<string, double, double, int, double, double>)Map.PlaceText;
 			script.Globals["ColorFromRGB"] = (Func<int, int, int, int>)ColorFromRGB;
@@ -185,6 +186,17 @@ namespace PR2_Level_Generator
 					Map.AddBlock(iX, iY, blockTypes[currentType]);
 					currentType = ++currentType % blockTypes.Length;
 				}
+			}
+		}
+		private void ClearRectangle(int x, int y, int width, int height)
+		{
+			if (!VerifyRectangleParams(width, height, new int[] { 0 }))
+				return;
+
+			for (int iX = x; iX < x + width; iX++)
+			{
+				for (int iY = y; iY < y + height; iY++)
+					Map.DeleteBlock(iX, iY);
 			}
 		}
 		private bool VerifyRectangleParams(int width, int height, params int[] blockTypes)
