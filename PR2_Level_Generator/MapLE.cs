@@ -35,8 +35,8 @@ namespace PR2_Level_Generator
 
 		// Block array(s)
 		public List<List<Block>> Blocks = new List<List<Block>>();
-		int XStart = 0;
-		List<int> YStart = new List<int>();
+		int xStart = 0;
+		List<int> yStart = new List<int>();
 		private Block firstBlock;
 		private Block lastBlock;
 		public int BlockCount = 0;
@@ -222,26 +222,20 @@ namespace PR2_Level_Generator
 		public Point[] playerStarts = new Point[4];
 
 		// Add a block to the level (increase BlockCount)
-		public void AddBlock(int X, int Y, int T)
+		public void AddBlock(int x, int y, int t)
 		{
 			if (BlockCount >= MaximumBlockCount)
 				return;
 
-			CreateIndex(X, Y);
-			// So I will not have to type X - XStart over and over
-			int BX = X - XStart;
-			int BY = Y - YStart[BX];
+			CreateIndex(x, y);
 
-			// Increase BlockCount
+			x -= xStart;
+			y -= yStart[x];
+
 			BlockCount += 1;
 
 			// Add block
-			Block added = new Block();
-			Blocks[BX][BY] = added;
-			// Now to set the block! :D
-			added.X = X;
-			added.Y = Y;
-			added.T = T;
+			Block added = new Block() { X = x, Y = y, T = t };
 			added.course = this;
 			if (firstBlock == null)
 				firstBlock = added;
@@ -251,46 +245,48 @@ namespace PR2_Level_Generator
 				added.previous.next = added;
 			}
 			lastBlock = added;
+			Blocks[x][y] = added;
 
 			// Check if this is a new min/max
-			if (X < MinX)
-				MinX = X;
-			else if (X > MaxX)
-				MaxX = X;
-			if (Y < MinY)
-				MinY = Y;
-			else if (Y > MaxY)
-				MaxY = Y;
+			if (x < MinX)
+				MinX = x;
+			else if (x > MaxX)
+				MaxX = x;
+			if (y < MinY)
+				MinY = y;
+			else if (y > MaxY)
+				MaxY = y;
 
 			// Player starts
-			if (T >= BlockID.P1 && T <= BlockID.P4)
+			if (t >= BlockID.P1 && t <= BlockID.P4)
 			{
-				int psID = T - BlockID.P1;
-				playerStarts[psID] = new Point(X * 30 + 15, Y * 30 + 15);
+				int psID = t - BlockID.P1;
+				playerStarts[psID] = new Point(x * 30 + 15, y * 30 + 15);
 			}
 			// Finish count for objective
-			if (T == BlockID.Finish)
-				finish_count += 1;
+			else if (t == BlockID.Finish)
+				finish_count++;
 		}
-		public void ReplaceBlock(int X, int Y, int T)
+		public void ReplaceBlock(int x, int y, int t)
 		{
-			Block cBlock = GetBlock(X, Y);
+			Block cBlock = GetBlock(x, y);
 			if (cBlock.T == 99)
-				AddBlock(X, Y, T);
+				AddBlock(x, y, t);
 			else
-				cBlock.T = T;
+				cBlock.T = t;
 		}
 		// Delete a block (Decreases BlockCount)
-		public void DeleteBlock(int X, int Y)
+		public void DeleteBlock(int x, int y)
 		{
 			// Make sure it exists before doing anything
-			if (!BlockExists(X, Y, false))
+			if (!BlockExists(x, y))
 				return;
 
+			x -= xStart;
+			y -= yStart[x];
+
 			Block delBlock;
-			X = X - XStart;
-			Y = Y - YStart[X];
-			delBlock = Blocks[X][Y];
+			delBlock = Blocks[x][y];
 			if (delBlock.previous != null)
 				delBlock.previous.next = delBlock.next;
 			else
@@ -299,76 +295,62 @@ namespace PR2_Level_Generator
 				delBlock.next.previous = delBlock.previous;
 			else
 				lastBlock = delBlock.previous;
-			Blocks[X][Y] = null; // Set to nothing
-								 //list_blocks.RemoveAt(delBlock.mapID);
+			Blocks[x][y] = null;
 
-			// if it is at YStart or at the end of the Y's, change array.
-			if (Y == 0)
+			// shrink Blocks lists if possible
+			if (y == 0)
 			{
 				// if this is the ONLY Y, array = nothing
-				if (Blocks[X].Count == 1)
-				{
-					Blocks[X] = null;
-				}
+				if (Blocks[x].Count == 1)
+					Blocks[x] = null;
 				else
 				{
-					Blocks[X].RemoveAt(0);
-					// Remove all nothings from the array until the first block
-					if (Blocks[X][0] == null)
-					{
-						do
-						{
-							Blocks[X].RemoveAt(0);
-						} while (Blocks[X][0] == null);
-					}
-					// This is the new YStart.
-					YStart[X] = Blocks[X][0].Y;
+					int toRemove = 1;
+					while (Blocks[x][toRemove] == null)
+						toRemove++;
+					Blocks[x].RemoveRange(0, toRemove);
+
+					yStart[x] = Blocks[x][0].Y;
 				}
 			}
-			else if (Y == Blocks[X].Count - 1)
+			else if (y == Blocks[x].Count - 1)
 			{
-				Blocks[X].RemoveAt(Blocks[X].Count - 1);
-				// Remove all nothings from the array until the last block
-				if (Blocks[X][Blocks[X].Count - 1] == null)
-				{
-					do
-					{
-						Blocks[X].RemoveAt(Blocks[X].Count - 1);
-					} while (Blocks[X][Blocks[X].Count - 1] == null);
-				}
+				int removeFrom = Blocks[x].Count - 2;
+				while (Blocks[x][removeFrom] == null)
+					removeFrom--;
+				removeFrom++;
+				Blocks[x].RemoveRange(removeFrom, Blocks[x].Count - removeFrom);
 			}
-			// if this X is now null, and
-			// if we are at XStart or the end of the X's, change array.
-			if (Blocks[X] == null)
+
+			if (Blocks[x] == null)
 			{
-				if (X == 0)
+				if (x == 0)
 				{
 					// if this is the ONLY X, reset Lists
 					if (Blocks.Count == 1)
 					{
 						Blocks = new List<List<Block>>();
-						YStart = new List<int>();
+						yStart = new List<int>();
 					}
 					else
 					{
-						// Remove all nothings from the list until the first 
-						do
-						{
-							Blocks.RemoveAt(0);
-							YStart.RemoveAt(0);
-						} while (Blocks[0] == null);
-						// new XStart
-						XStart = Blocks[0][0].X;
+						int toRemove = 1;
+						while (Blocks[toRemove] == null)
+							toRemove++;
+						Blocks.RemoveRange(0, toRemove);
+						yStart.RemoveRange(0, toRemove);
+
+						xStart = Blocks[0][0].X;
 					}
 				}
-				else if (X == Blocks.Count - 1)
+				else if (x == Blocks.Count - 1)
 				{
-					// Remove all nothings from the list until the last block
-					do
-					{
-						YStart.RemoveAt(Blocks.Count - 1);
-						Blocks.RemoveAt(Blocks.Count - 1);
-					} while (Blocks[Blocks.Count - 1] == null);
+					int removeFrom = Blocks.Count - 2;
+					while (Blocks[removeFrom] == null)
+						removeFrom--;
+					removeFrom++;
+					Blocks.RemoveRange(removeFrom, Blocks.Count - removeFrom);
+					yStart.RemoveRange(removeFrom, yStart.Count - removeFrom);
 				}
 			}
 
@@ -397,7 +379,7 @@ namespace PR2_Level_Generator
 			firstBlock = null;
 			lastBlock = null;
 
-			XStart = 0;
+			xStart = 0;
 			List<int> YStart = new List<int>();
 			BlockCount = 0;
 
@@ -424,17 +406,17 @@ namespace PR2_Level_Generator
 			Block Bloc = GetBlock(X, Y);
 			if (Bloc.T != 99)
 			{
-				if (!BlockExists(X + MovX, Y + MovY, false))
+				if (!BlockExists(X + MovX, Y + MovY))
 				{
 					// Make sure the index it's moving to exists before moving it
 					CreateIndex(X + MovX, Y + MovY);
 					// Get blocks at old position and at new position
-					Block newB = Blocks[X - XStart][Y - YStart[X - XStart]];
+					Block newB = Blocks[X - xStart][Y - yStart[X - xStart]];
 					// MOVE IT
 					newB.X += MovX;
 					newB.Y += MovY;
-					Blocks[newB.X - XStart][newB.Y - YStart[newB.X - XStart]] = newB;
-					Blocks[X - XStart][Y - YStart[X - XStart]] = null;
+					Blocks[newB.X - xStart][newB.Y - yStart[newB.X - xStart]] = newB;
+					Blocks[X - xStart][Y - yStart[X - xStart]] = null;
 				}
 			}
 		}
@@ -465,40 +447,40 @@ namespace PR2_Level_Generator
 			// if this is for the very first block
 			if (Blocks.Count == 0 || Blocks[0] == null)
 			{
-				XStart = x;
+				xStart = x;
 				Blocks = new List<List<Block>>();
 				Blocks.Add(new List<Block>());
-				YStart = new List<int>();
-				YStart.Add(y);
+				yStart = new List<int>();
+				yStart.Add(y);
 			}
 
-			int bX = x - XStart;
+			int bX = x - xStart;
 			if (bX < 0)
 			{
 				Blocks.InsertRange(0, new List<Block>[-bX]);
-				YStart.InsertRange(0, new int[-bX]);
-				XStart = x;
-				bX = x - XStart;
+				yStart.InsertRange(0, new int[-bX]);
+				xStart = x;
+				bX = x - xStart;
 			}
 			else if (bX > Blocks.Count - 1)
 			{
 				for (int i = Blocks.Count; i <= bX; i++)
 				{
 					Blocks.Add(null);
-					YStart.Add(y);
+					yStart.Add(y);
 				}
 			}
 			if (Blocks[bX] == null)
 			{
 				Blocks[bX] = new List<Block>();
-				YStart[bX] = y;
+				yStart[bX] = y;
 			}
 
-			int bY = y - YStart[bX];
+			int bY = y - yStart[bX];
 			if (bY < 0)
 			{
 				Blocks[bX].InsertRange(0, new Block[-bY]);
-				YStart[bX] = y;
+				yStart[bX] = y;
 			}
 			else if (bY > Blocks[bX].Count - 1)
 			{ // Y is higher than max Y in the array
@@ -507,57 +489,33 @@ namespace PR2_Level_Generator
 			}
 		}
 		// Check if a block exists
-		public bool BlockExists(int X, int Y, bool IndexR = false)
+		public bool BlockExists(int x, int y)
 		{
-			// Relative index, or straight X, Y coordinates?
-			if (IndexR == false)
-			{
-				X -= XStart;
-			}
-			// See if that X exists.
-			if (X < 0 || X >= Blocks.Count)
-			{
-				// It does not.
+			x -= xStart;
+			if (x < 0 || x >= Blocks.Count || Blocks[x] == null)
 				return false;
-			}
-			else if (Blocks[X] == null)
-			{
-				// if it's in bounds, the array can still be a nothing
+
+			y -= yStart[x];
+			if (y < 0 || y >= Blocks[x].Count || Blocks[x][y] == null)
 				return false;
-			}
-			// Y index, and Y exist
-			if (IndexR == false)
-			{
-				Y -= YStart[X];
-			}
-			if (Y < 0 || Y >= Blocks[X].Count)
-			{
-				return false;
-			}
-			else if (Blocks[X][Y] == null)
-			{
-				return false;
-			}
-			// It exists if it doesn't not.
+
 			return true;
 		}
 		// get Block by it's real X and Y
-		public Block GetBlock(int LocX, int LocY)
+		public Block GetBlock(int x, int y)
 		{
-			Block TheBlock;
+			Block ret;
 			// if ( the block exists, return it. Otherwise return a 99
-			if (BlockExists(LocX, LocY, false))
-			{
-				TheBlock = Blocks[LocX - XStart][LocY - YStart[LocX - XStart]];
-			}
+			if (BlockExists(x, y))
+				ret = Blocks[x - xStart][y - yStart[x - xStart]];
 			else
 			{
-				TheBlock = new Block();
-				TheBlock.X = LocX;
-				TheBlock.Y = LocY;
-				TheBlock.T = 99;
+				ret = new Block();
+				ret.X = x;
+				ret.Y = y;
+				ret.T = 99;
 			}
-			return TheBlock;
+			return ret;
 		}
 
 		// get the level's data
@@ -712,8 +670,8 @@ namespace PR2_Level_Generator
 			playerStarts = new Point[] { new Point(), new Point(), new Point(), new Point() };
 			// get blocks from data
 			Blocks = new List<List<Block>>();
-			XStart = 0;
-			YStart = new List<int>();
+			xStart = 0;
+			yStart = new List<int>();
 			BlockCount = 0;
 			MinX = 0;
 			MaxX = 0;
