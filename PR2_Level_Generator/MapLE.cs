@@ -564,27 +564,19 @@ namespace PR2_Level_Generator
 			return Cln;
 		}
 
+		private static SortedSet<int> nonSolidTypes = new SortedSet<int>(new int[] { BlockID.BLANK, BlockID.P1, BlockID.P2, BlockID.P3,
+		  BlockID.P4, BlockID.Water, BlockID.Net, BlockID.Egg});
 		public bool IsSolid()
 		{
-			if (T != BlockID.BLANK && T != BlockID.Net && T != BlockID.Water && T < BlockID.Egg && (T < BlockID.P1 || T > BlockID.P4))
-				return true;
-			else
-				return false;
+			return !nonSolidTypes.Contains(T);
 		}
 
+		private static SortedSet<int> safeTypes = new SortedSet<int>(new int[] { 0, 1, 2, 3, 5, 6, 7, 8, // basic and arrow blocks
+		  BlockID.Item, BlockID.Ice, BlockID.Finish, BlockID.GravRight, BlockID.GravLeft, BlockID.InfItem,
+		  BlockID.Happy, BlockID.Sad, BlockID.Heart, BlockID.Time});
 		public bool Safe
 		{
-			get
-			{
-				if ((T < 9 && T != 4) || T == 10 || T == 15 || T == 16 || T == 21 || T == 22 || (T > 24 && T < 30))
-				{
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
+			get { return safeTypes.Contains(T); }
 		}
 
 		private int GetArrowDir(int rot)
