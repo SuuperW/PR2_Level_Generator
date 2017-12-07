@@ -11,7 +11,7 @@ namespace PR2_Level_Generator
 		// Normal (?) = 600, 540
 		// PR2 = 540??, 500??
 		// Video = 640, 480
-		public MapLE()
+		public MapLE(Type grid = null)
 		{
 			settings = new SortedDictionary<string, string>();
 			settings.Add("song", ""); // random song
@@ -31,21 +31,20 @@ namespace PR2_Level_Generator
 
 			for (int i = 0; i < artCodes.Length; i++)
 				artCodes[i] = new StringBuilder();
+
+			if (grid == null)
+				grid = typeof(LowMemoryBlockGrid);
+
+			if (!(typeof(IBlockGrid).IsAssignableFrom(grid)))
+				throw new ArgumentException("grid must be an IBlockGrid");
+			this.grid = grid;
+			blocks = Activator.CreateInstance(grid) as IBlockGrid;
 		}
 
-		// Block array(s)
-		public List<List<Block>> Blocks = new List<List<Block>>();
-		int xStart = 0;
-		List<int> yStart = new List<int>();
-		private Block firstBlock;
-		private Block lastBlock;
+		private Type grid;
+		private IBlockGrid blocks;
 		public int BlockCount = 0;
 		public int MaximumBlockCount = 100000;
-
-		int MinX = 0;
-		int MaxX = 0;
-		int MinY = 0;
-		public int MaxY = 0;
 
 		public uint BGC = 0xbbbbdd;
 		public int bgID = -1;
@@ -224,38 +223,8 @@ namespace PR2_Level_Generator
 		// Add a block to the level (increase BlockCount)
 		public void AddBlock(int x, int y, int t)
 		{
-			if (BlockCount >= MaximumBlockCount)
-				return;
-
-			CreateIndex(x, y);
-
-			x -= xStart;
-			y -= yStart[x];
-
-			BlockCount += 1;
-
-			// Add block
-			Block added = new Block() { X = x, Y = y, T = t };
-			added.course = this;
-			if (firstBlock == null)
-				firstBlock = added;
-			else
-			{
-				added.previous = lastBlock;
-				added.previous.next = added;
-			}
-			lastBlock = added;
-			Blocks[x][y] = added;
-
-			// Check if this is a new min/max
-			if (x < MinX)
-				MinX = x;
-			else if (x > MaxX)
-				MaxX = x;
-			if (y < MinY)
-				MinY = y;
-			else if (y > MaxY)
-				MaxY = y;
+			BlockCount++;
+			blocks.PlaceBlock(x, y, t);
 
 			// Player starts
 			if (t >= BlockID.P1 && t <= BlockID.P4)
@@ -265,96 +234,31 @@ namespace PR2_Level_Generator
 			}
 			// Finish count for objective
 			else if (t == BlockID.Finish)
-				finish_count++;
+				finish_count += 1;
+
 		}
 		public void ReplaceBlock(int x, int y, int t)
 		{
-			Block cBlock = GetBlock(x, y);
-			if (cBlock.T == 99)
-				AddBlock(x, y, t);
+			Block b = blocks.GetBlock(x, y);
+			if (b.T != BlockID.BLANK)
+				blocks.GetBlock(x, y).T = t;
 			else
-				cBlock.T = t;
+				AddBlock(x, y, t);
 		}
 		// Delete a block (Decreases BlockCount)
 		public void DeleteBlock(int x, int y)
 		{
-			// Make sure it exists before doing anything
-			if (!BlockExists(x, y))
-				return;
-
-			x -= xStart;
-			y -= yStart[x];
-
-			Block delBlock;
-			delBlock = Blocks[x][y];
-			if (delBlock.previous != null)
-				delBlock.previous.next = delBlock.next;
-			else
-				firstBlock = delBlock.next;
-			if (delBlock.next != null)
-				delBlock.next.previous = delBlock.previous;
-			else
-				lastBlock = delBlock.previous;
-			Blocks[x][y] = null;
-
-			// shrink Blocks lists if possible
-			if (y == 0)
+			Block b = GetBlock(x, y);
+			if (b.T != BlockID.BLANK)
 			{
-				// if this is the ONLY Y, array = nothing
-				if (Blocks[x].Count == 1)
-					Blocks[x] = null;
-				else
-				{
-					int toRemove = 1;
-					while (Blocks[x][toRemove] == null)
-						toRemove++;
-					Blocks[x].RemoveRange(0, toRemove);
+				if (b.previous != null)
+					b.previous = b.next;
+				if (b.next != null)
+					b.next = b.previous;
 
-					yStart[x] = Blocks[x][0].Y;
-				}
+				blocks.PlaceBlock(x, y, BlockID.BLANK);
+				BlockCount--;
 			}
-			else if (y == Blocks[x].Count - 1)
-			{
-				int removeFrom = Blocks[x].Count - 2;
-				while (Blocks[x][removeFrom] == null)
-					removeFrom--;
-				removeFrom++;
-				Blocks[x].RemoveRange(removeFrom, Blocks[x].Count - removeFrom);
-			}
-
-			if (Blocks[x] == null)
-			{
-				if (x == 0)
-				{
-					// if this is the ONLY X, reset Lists
-					if (Blocks.Count == 1)
-					{
-						Blocks = new List<List<Block>>();
-						yStart = new List<int>();
-					}
-					else
-					{
-						int toRemove = 1;
-						while (Blocks[toRemove] == null)
-							toRemove++;
-						Blocks.RemoveRange(0, toRemove);
-						yStart.RemoveRange(0, toRemove);
-
-						xStart = Blocks[0][0].X;
-					}
-				}
-				else if (x == Blocks.Count - 1)
-				{
-					int removeFrom = Blocks.Count - 2;
-					while (Blocks[removeFrom] == null)
-						removeFrom--;
-					removeFrom++;
-					Blocks.RemoveRange(removeFrom, Blocks.Count - removeFrom);
-					yStart.RemoveRange(removeFrom, yStart.Count - removeFrom);
-				}
-			}
-
-			BlockCount -= 1;
 		}
 		private Block DataToBlock(string bData)
 		{
@@ -375,49 +279,19 @@ namespace PR2_Level_Generator
 		// Clear ALL blocks
 		public void ClearBlocks()
 		{
-			Blocks.Clear();
-			firstBlock = null;
-			lastBlock = null;
+			blocks = Activator.CreateInstance(grid) as IBlockGrid;
 
-			xStart = 0;
-			List<int> YStart = new List<int>();
 			BlockCount = 0;
-
-			MinX = 0;
-			MaxX = 0;
-			MinY = 0;
-			MaxY = 0;
 		}
 		public void ClearType(int T)
 		{
-			Block cBlock = firstBlock;
+			Block cBlock = blocks.FirstBlock;
 			while (cBlock != null)
 			{
 				if (cBlock.T == T)
 					DeleteBlock(cBlock.X, cBlock.Y);
 
 				cBlock = cBlock.next;
-			}
-		}
-
-		// Move a block - do not delete/place. (placing can change off-course bounds)
-		public void MoveBlock(int X, int Y, int MovX, int MovY)
-		{
-			Block Bloc = GetBlock(X, Y);
-			if (Bloc.T != 99)
-			{
-				if (!BlockExists(X + MovX, Y + MovY))
-				{
-					// Make sure the index it's moving to exists before moving it
-					CreateIndex(X + MovX, Y + MovY);
-					// Get blocks at old position and at new position
-					Block newB = Blocks[X - xStart][Y - yStart[X - xStart]];
-					// MOVE IT
-					newB.X += MovX;
-					newB.Y += MovY;
-					Blocks[newB.X - xStart][newB.Y - yStart[newB.X - xStart]] = newB;
-					Blocks[X - xStart][Y - yStart[X - xStart]] = null;
-				}
 			}
 		}
 
@@ -441,81 +315,15 @@ namespace PR2_Level_Generator
 			lastStampY += (int)y;
 		}
 
-		// Make sure a given index exists in the Blocks list
-		private void CreateIndex(int x, int y)
-		{
-			// if this is for the very first block
-			if (Blocks.Count == 0 || Blocks[0] == null)
-			{
-				xStart = x;
-				Blocks = new List<List<Block>>();
-				Blocks.Add(new List<Block>());
-				yStart = new List<int>();
-				yStart.Add(y);
-			}
-
-			int bX = x - xStart;
-			if (bX < 0)
-			{
-				Blocks.InsertRange(0, new List<Block>[-bX]);
-				yStart.InsertRange(0, new int[-bX]);
-				xStart = x;
-				bX = x - xStart;
-			}
-			else if (bX > Blocks.Count - 1)
-			{
-				for (int i = Blocks.Count; i <= bX; i++)
-				{
-					Blocks.Add(null);
-					yStart.Add(y);
-				}
-			}
-			if (Blocks[bX] == null)
-			{
-				Blocks[bX] = new List<Block>();
-				yStart[bX] = y;
-			}
-
-			int bY = y - yStart[bX];
-			if (bY < 0)
-			{
-				Blocks[bX].InsertRange(0, new Block[-bY]);
-				yStart[bX] = y;
-			}
-			else if (bY > Blocks[bX].Count - 1)
-			{ // Y is higher than max Y in the array
-				for (int i = Blocks[bX].Count; i <= bY; i++)
-					Blocks[bX].Add(null);
-			}
-		}
 		// Check if a block exists
 		public bool BlockExists(int x, int y)
 		{
-			x -= xStart;
-			if (x < 0 || x >= Blocks.Count || Blocks[x] == null)
-				return false;
-
-			y -= yStart[x];
-			if (y < 0 || y >= Blocks[x].Count || Blocks[x][y] == null)
-				return false;
-
-			return true;
+			return blocks.GetBlock(x, y).T != BlockID.BLANK;
 		}
 		// get Block by it's real X and Y
 		public Block GetBlock(int x, int y)
 		{
-			Block ret;
-			// if ( the block exists, return it. Otherwise return a 99
-			if (BlockExists(x, y))
-				ret = Blocks[x - xStart][y - yStart[x - xStart]];
-			else
-			{
-				ret = new Block();
-				ret.X = x;
-				ret.Y = y;
-				ret.T = 99;
-			}
-			return ret;
+			return new Block() { X = x, Y = y, T = blocks.GetBlock(x, y).T };
 		}
 
 		// get the level's data
@@ -590,23 +398,21 @@ namespace PR2_Level_Generator
 		private string GetBlockData()
 		{
 			StringBuilder ret = new StringBuilder(BlockCount * 5);
-			Block cBlock = firstBlock;
+			Block cBlock = blocks.FirstBlock;
 			int lastX = 0;
 			int lastY = 0;
 			int lastT = 0;
 			while (cBlock != null)
 			{
-				ret.Append(cBlock.X - lastX);
-				ret.Append(";");
-				ret.Append(cBlock.Y - lastY);
+				ret.Append((cBlock.X - lastX) + ";" + (cBlock.Y - lastY));
 				if (cBlock.T != lastT)
 					ret.Append(";" + cBlock.T);
+				ret.Append(",");
 
 				lastX = cBlock.X;
 				lastY = cBlock.Y;
 				lastT = cBlock.T;
 
-				ret.Append(",");
 				cBlock = cBlock.next;
 			}
 			if (ret.Length > 0)
@@ -669,14 +475,8 @@ namespace PR2_Level_Generator
 		{
 			playerStarts = new Point[] { new Point(), new Point(), new Point(), new Point() };
 			// get blocks from data
-			Blocks = new List<List<Block>>();
-			xStart = 0;
-			yStart = new List<int>();
+			blocks = Activator.CreateInstance(grid) as IBlockGrid;
 			BlockCount = 0;
-			MinX = 0;
-			MaxX = 0;
-			MinY = 0;
-			MaxY = 0;
 			finish_count = 0;
 
 			string[] BlocksC = bData.Split(',');
@@ -711,6 +511,7 @@ namespace PR2_Level_Generator
 
 	public static class BlockID
 	{
+		public const int BLANK = -1;
 		public const int BB0 = 0;
 		public const int BB1 = 1;
 		public const int BB2 = 2;
@@ -751,7 +552,6 @@ namespace PR2_Level_Generator
 		public int Y = 0;
 		public int T = BlockID.BB0;
 
-		public MapLE course;
 		public Block previous;
 		public Block next;
 
@@ -766,7 +566,7 @@ namespace PR2_Level_Generator
 
 		public bool IsSolid()
 		{
-			if (T != BlockID.Net && T != BlockID.Water && T < BlockID.Egg && (T < BlockID.P1 || T > BlockID.P4))
+			if (T != BlockID.BLANK && T != BlockID.Net && T != BlockID.Water && T < BlockID.Egg && (T < BlockID.P1 || T > BlockID.P4))
 				return true;
 			else
 				return false;
@@ -776,7 +576,7 @@ namespace PR2_Level_Generator
 		{
 			get
 			{
-				if ((T < 9 && T != 4) || T == 10 || T == 15 || T == 16 || T == 21 || T == 22 || (T > 24 && T != 99))
+				if ((T < 9 && T != 4) || T == 10 || T == 15 || T == 16 || T == 21 || T == 22 || (T > 24 && T < 30))
 				{
 					return true;
 				}
