@@ -137,8 +137,11 @@ namespace PR2_Level_Generator
 				if (x == 0)
 				{
 					int toRemove = 1;
-					while (blocks[toRemove] == null)
-						toRemove++;
+					if (blocks.Count > 1)
+					{
+						while (blocks[toRemove] == null)
+							toRemove++;
+					}
 					blocks.RemoveRange(0, toRemove);
 					yStart.RemoveRange(0, toRemove);
 					xStart -= toRemove;
