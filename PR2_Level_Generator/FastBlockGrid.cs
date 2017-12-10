@@ -117,8 +117,12 @@ namespace PR2_Level_Generator
 
 			if (b.previous != null)
 				b.previous.next = b.next;
+			else if (b == FirstBlock)
+				FirstBlock = b.next;
 			if (b.next != null)
 				b.next.previous = b.previous;
+			else if (b == last)
+				last = b.previous;
 
 			// clean up blocks lists
 			x -= xStart;

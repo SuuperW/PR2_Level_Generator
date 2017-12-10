@@ -51,10 +51,23 @@ namespace PR2_Level_Generator
 			SortedList<int, Block> list = blocks.GetValueOrDefault(x);
 			if (list != null)
 			{
-				if (list.Count == 1)
-					blocks.Remove(x);
-				else
-					list.Remove(y);
+				Block b = list.GetValueOrDefault(y);
+				if (b != null)
+				{
+					if (list.Count == 1)
+						blocks.Remove(x);
+					else
+						list.Remove(y);
+
+					if (b.previous != null)
+						b.previous.next = b.next;
+					else if (b == FirstBlock)
+						FirstBlock = b.next;
+					if (b.next != null)
+						b.next.previous = b.previous;
+					else if (b == lastBlock)
+						lastBlock = b.previous;
+				}
 			}
 		}
 	}
