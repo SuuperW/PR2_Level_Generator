@@ -277,14 +277,9 @@ namespace PR2_Level_Generator
 		// Delete a block (Decreases BlockCount)
 		public void DeleteBlock(int x, int y)
 		{
-			Block b = GetBlock(x, y);
+			Block b = blocks.GetBlock(x, y);
 			if (b.T != BlockID.BLANK)
 			{
-				if (b.previous != null)
-					b.previous = b.next;
-				if (b.next != null)
-					b.next = b.previous;
-
 				blocks.DeleteBlock(x, y);
 				BlockCount--;
 			}
