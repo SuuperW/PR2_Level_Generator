@@ -13,21 +13,7 @@ namespace PR2_Level_Generator
 		// Video = 640, 480
 		public MapLE(Type grid = null)
 		{
-			settings = new SortedDictionary<string, string>();
-			settings.Add("song", ""); // random song
-			settings.Add("min_level", "0");
-			settings.Add("gravity", "1");
-			settings.Add("items", ""); // always call SetItems, never change this directly
-			SetItems("1`2`3`4`5`6`7`8`9");
-			settings.Add("cowboyChance", "5");
-			settings.Add("hasPass", "0");
-			settings.Add("gameMode", "race");
-			settings.Add("title", "title");
-			settings.Add("credits", "PR2_Level_Generator");
-			settings.Add("note", "");
-			settings.Add("live", "0");
-			settings.Add("max_time", "120");
-			settings.Add("password", "");
+			InitializeSettingsToDefault();
 
 			for (int i = 0; i < artCodes.Length; i++)
 				artCodes[i] = new StringBuilder();
@@ -51,6 +37,49 @@ namespace PR2_Level_Generator
 
 		// Options
 		#region "Map Settings"
+		private void InitializeSettingsToBlank()
+		{
+			settings = new SortedDictionary<string, string>();
+			settings.Add("song", ""); // random song
+			settings.Add("min_level", "");
+			settings.Add("gravity", "");
+			settings.Add("items", ""); // always call SetItems, never set this directly
+			SetItems("");
+			settings.Add("cowboyChance", "5"); // pr2hub automatically sets this one
+			settings.Add("hasPass", "");
+			settings.Add("gameMode", "race"); // pr2hub automatically sets this one
+			settings.Add("title", "");
+			settings.Add("credits", "");
+			settings.Add("note", "");
+			settings.Add("live", "");
+			settings.Add("max_time", "");
+			settings.Add("password", "");
+
+			mapless = false;
+			passImpossible = false;
+		}
+		private void InitializeSettingsToDefault()
+		{
+			settings = new SortedDictionary<string, string>();
+			settings.Add("song", ""); // random song
+			settings.Add("min_level", "0");
+			settings.Add("gravity", "1");
+			settings.Add("items", "");
+			SetItems("1`2`3`4`5`6`7`8`9");
+			settings.Add("cowboyChance", "5");
+			settings.Add("hasPass", "0");
+			settings.Add("gameMode", "race");
+			settings.Add("title", "title");
+			settings.Add("credits", "PR2_Level_Generator");
+			settings.Add("note", "");
+			settings.Add("live", "0");
+			settings.Add("max_time", "120");
+			settings.Add("password", "");
+
+			mapless = false;
+			passImpossible = false;
+		}
+
 		SortedDictionary<string, string> settings;
 		public string[] SettingNames
 		{
@@ -214,8 +243,8 @@ namespace PR2_Level_Generator
 		}
 
 		// Options that are not in PR2
-		public bool mapless = false;
-		public bool passImpossible = false;
+		public bool mapless;
+		public bool passImpossible;
 
 		// Players
 		public Point[] playerStarts = new Point[4];
@@ -256,7 +285,7 @@ namespace PR2_Level_Generator
 				if (b.next != null)
 					b.next = b.previous;
 
-				blocks.PlaceBlock(x, y, BlockID.BLANK);
+				blocks.DeleteBlock(x, y);
 				BlockCount--;
 			}
 		}
@@ -338,9 +367,7 @@ namespace PR2_Level_Generator
 			// Put all the data bits into one string
 			StringBuilder LData = new StringBuilder();
 			foreach (KeyValuePair<string, string> kvp in settings)
-			{
 				LData.Append(kvp.Key + "=" + kvp.Value + "&");
-			}
 			LData.Append("hash=" + upload_hash + "&data=" + data);
 
 			// Password
@@ -422,51 +449,51 @@ namespace PR2_Level_Generator
 		}
 		public void LoadLevel(string LvlData)
 		{
-			if (!LvlData.Substring(LvlData.Length - 32).Contains("&") && !LvlData.Substring(LvlData.Length - 32).Contains("`"))
+			if (LvlData.Length >= 32 && !LvlData.Substring(LvlData.Length - 32).Contains("&") && !LvlData.Substring(LvlData.Length - 32).Contains("`"))
 				LvlData = LvlData.Substring(0, LvlData.Length - 32); // Remove hash at end of level code, if present
 
-			string[] Parts = LvlData.Split('&');
+			// Restore all defaults
+			InitializeSettingsToBlank();
 
 			string levelData = "";
-			for (int i = 0; i < Parts.Length; i++)
+			string[] parts = LvlData.Split('&');
+			for (int i = 0; i < parts.Length; i++)
 			{
-				int e = Parts[i].IndexOf('=');
-				string LD = Parts[i].Substring(e + 1);
-				string pName = Parts[i].Substring(0, e);
+				int e = parts[i].IndexOf('=');
+				if (e == -1)
+					continue;
 
-				if (!SetSetting(pName, LD))
+				string value = parts[i].Substring(e + 1);
+				string name = parts[i].Substring(0, e);
+
+				if (!SetSetting(name, value))
 				{
-					if (pName == "data")
-						levelData = LD;
-					else if (pName == "has_pass") // in uploads it is hasPass, in downloads it is has_pass
-						settings["hasPass"] = LD;
+					if (name == "data")
+						levelData = value;
+					else if (name == "has_pass") // in uploads it is hasPass, in downloads it is has_pass
+						settings["hasPass"] = value;
 				}
 			}
-			useOldPass = true;
-			passImpossible = false;
-			settings["password"] = "";
 
 			string[] Codes = levelData.Split('`');
+			if (Codes.Length < 14)
+				Array.Resize(ref Codes, 14);
 			// Set arts 1-3
 			for (int i = 0; i < 6; i++)
-			{
 				artCodes[i] = new StringBuilder(Codes[i + 3]);
-			}
-			if (Codes[1].Length >= 6)
+
+			if (Codes[1]?.Length >= 6)
 				BGC = Convert.ToUInt32(Codes[1], 16);
 			else
 				BGC = 0x000000;
 
-			if (Codes[9] == "")
+			if (string.IsNullOrEmpty(Codes[9]))
 				bgID = -1;
 			else
 				bgID = Convert.ToInt32(Codes[9]);
 			// Art 0 and 00
-			if (Codes.Length > 10)
-			{
-				for (int i = 6; i < 10; i++)
-					artCodes[i] = new StringBuilder(Codes[i + 4]);
-			}
+			for (int i = 6; i < 10; i++)
+				artCodes[i] = new StringBuilder(Codes[i + 4]);
 
 			// get blocks from data
 			LoadBlocks(Codes[2]);
@@ -479,6 +506,8 @@ namespace PR2_Level_Generator
 			BlockCount = 0;
 			finish_count = 0;
 
+			if (bData == null)
+				bData = "";
 			string[] BlocksC = bData.Split(',');
 			int LpX = 0;
 			int LpY = 0;
@@ -550,7 +579,14 @@ namespace PR2_Level_Generator
 	{
 		public int X = 0;
 		public int Y = 0;
+		/// <summary>
+		/// Values from 0-30 are normal block values. 100-130 also work. All others are invalid and will cause the level to never finish drawing.
+		/// </summary>
 		public int T = BlockID.BB0;
+		private bool IsValidType()
+		{
+			return (T >= 0 && T <= 30) || (T >= 100 && T <= 130);
+		}
 
 		public Block previous;
 		public Block next;
@@ -564,19 +600,25 @@ namespace PR2_Level_Generator
 			return Cln;
 		}
 
-		private static SortedSet<int> nonSolidTypes = new SortedSet<int>(new int[] { BlockID.BLANK, BlockID.P1, BlockID.P2, BlockID.P3,
+		private static SortedSet<int> nonSolidTypes = new SortedSet<int>(new int[] { BlockID.P1, BlockID.P2, BlockID.P3,
 		  BlockID.P4, BlockID.Water, BlockID.Net, BlockID.Egg});
+		/// <summary>
+		/// Invalid block types are considered non-solid.
+		/// </summary>
 		public bool IsSolid()
 		{
-			return !nonSolidTypes.Contains(T);
+			return IsValidType() && !nonSolidTypes.Contains(T) && !nonSolidTypes.Contains(T - 100);
 		}
 
 		private static SortedSet<int> safeTypes = new SortedSet<int>(new int[] { 0, 1, 2, 3, 5, 6, 7, 8, // basic and arrow blocks
 		  BlockID.Item, BlockID.Ice, BlockID.Finish, BlockID.GravRight, BlockID.GravLeft, BlockID.InfItem,
 		  BlockID.Happy, BlockID.Sad, BlockID.Heart, BlockID.Time});
+		/// <summary>
+		/// Invalid block types are considered non-safe.
+		/// </summary>
 		public bool Safe
 		{
-			get { return safeTypes.Contains(T); }
+			get { return IsValidType() && safeTypes.Contains(T); }
 		}
 
 		private int GetArrowDir(int rot)
