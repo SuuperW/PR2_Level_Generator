@@ -107,9 +107,9 @@ namespace PR2_Level_Generator
 		}
 
 		public MapLE Map { get; private set; }
-		private const int BLOCK_UNDER = 101;
-		private const int BLOCK_BLOCKED = 102;
-		private const int BLOCK_FINISHABLE = 103;
+		private const int BLOCK_UNDER = -101;
+		private const int BLOCK_BLOCKED = -102;
+		private const int BLOCK_FINISHABLE = -103;
 
 		Random R;
 		CancellationTokenSource cts;
