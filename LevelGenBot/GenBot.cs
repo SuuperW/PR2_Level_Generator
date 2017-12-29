@@ -43,6 +43,7 @@ namespace LevelGenBot
 
         SpecialUsersCollection specialUsers;
         CommandHistory commandHistory = new CommandHistory();
+        GenerationManager generationManager;
 
         public GenBot(int loggingLevel = 2)
         {
@@ -64,6 +65,10 @@ namespace LevelGenBot
 
             InitializeBotCommandsList();
             CreateHelpTopicsList();
+
+            generationManager = new GenerationManager(luaPath);
+            generationManager.username = pr2_username;
+            generationManager.login_token = pr2_token;
 
             // Delete any temp files that still exist from last time the bot was run.
             if (Directory.Exists("temp"))
@@ -358,7 +363,6 @@ namespace LevelGenBot
             everybodyBotCommands.Add("delete_level", new BotCommand(DeleteLevel, 15));
 
             trustedBotCommands = new SortedList<string, BotCommand>();
-            //trustedBotCommands.Add("set_config", new BotCommand(SetSettings, 5));
 
             ownerBotCommands = new SortedList<string, BotCommand>();
             ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
@@ -439,7 +443,6 @@ namespace LevelGenBot
             }
 
             string filePath = GetFilePath(msg.Author.Id, args[1], configsPath);
-            GenerationManager generationManager = new GenerationManager(luaPath);
             string result = generationManager.LoadSettings(filePath);
             if (result != null)
             {
@@ -447,8 +450,6 @@ namespace LevelGenBot
                   "config `" + args[1] + "` failed to load. Reason: `" + result + "`\n");
                 return false;
             }
-            generationManager.username = pr2_username;
-            generationManager.login_token = pr2_token;
 
             // modify config
             for (int i = 2; i < args.Length; i += 2)
@@ -505,9 +506,6 @@ namespace LevelGenBot
                 await SendMessage(msg.Channel, msg.Author.Username + ", you didn't specify a level to delete.");
                 return false;
             }
-
-            GenerationManager generationManager = new GenerationManager(null);
-            generationManager.login_token = pr2_token;
 
             int levelID;
             if (specialUsers.IsUserTrusted(msg.Author.Id) && args.Length > 2 && args[2] == "id")
@@ -637,7 +635,6 @@ namespace LevelGenBot
             string tempFileName = GetTempFileName();
             File.WriteAllText(tempFileName, str);
 
-            GenerationManager generationManager = new GenerationManager(luaPath);
             string result = generationManager.LoadSettings(tempFileName);
             File.Delete(tempFileName);
             if (result != null)
@@ -764,7 +761,6 @@ namespace LevelGenBot
             File.WriteAllText(filePath, str);
 
             // Create config file
-            GenerationManager generationManager = new GenerationManager(luaPath);
             generationManager.generator = luaGenerator;
             luaGenerator.ScriptName = filePath.Substring(luaPath.Length + 1).Replace('\\', '/');
             JObject config = generationManager.GetSaveObject();
