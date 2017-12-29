@@ -427,9 +427,9 @@ namespace LevelGenBot
 			await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), "Here are the commands you can use: ```" + availableCommands + "```");
 			return true;
 		}
-		#endregion
+        #endregion
 
-		#region "levels"
+        #region "levels"
 		private async Task<bool> GenerateLevel(SocketMessage msg, params string[] args)
 		{
 			if (args.Length < 2)
@@ -460,8 +460,15 @@ namespace LevelGenBot
 					return false;
 				}
 			}
+            // ensure level is unpublished, has a password, and credits are set (if user is not trusted)
+            string rejectedReason = VerifySettings(generationManager.generator, msg.Author.Id);
+            if (rejectedReason != null)
+            {
+                await SendMessage(msg.Channel, msg.Author.Username + " - " + rejectedReason);
+                return false;
+            }
 
-			Task<IUserMessage> sendingGenerateMessage = SendMessage(msg.Channel, msg.Author.Username +
+            Task<IUserMessage> sendingGenerateMessage = SendMessage(msg.Channel, msg.Author.Username +
 			  ", I am generating and uploading your level...");
 
 			MapLE map = generationManager.generator.Map;
