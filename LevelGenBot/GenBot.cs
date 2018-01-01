@@ -69,6 +69,7 @@ namespace LevelGenBot
             generationManager = new GenerationManager(luaPath);
             generationManager.username = pr2_username;
             generationManager.login_token = pr2_token;
+            generationManager.password = json["pr2_password"].ToString();
 
             // Delete any temp files that still exist from last time the bot was run.
             if (Directory.Exists("temp"))
@@ -497,6 +498,8 @@ namespace LevelGenBot
 
             await EditMessage(sendingGenerateMessage.Result, msg.Author.Username +
               ", I got this message from pr2hub.com:\n`" + response + "`");
+            await EnsureLoggedIn(msg, response);
+
             return true;
         }
         private async Task<bool> DeleteLevel(SocketMessage msg, params string[] args)
@@ -521,15 +524,19 @@ namespace LevelGenBot
                 string levelTitle = args[1] + " [" + msg.Author.Username + "#" + msg.Author.Discriminator + "]";
                 levelID = await generationManager.GetLevelID(levelTitle);
 
-                if (levelID == -1)
+                if (levelID < 0)
                 {
                     await SendMessage(msg.Channel, msg.Author.Username + ", the level `" + levelTitle + "` could not be found.");
+                    if (levelID == -2)
+                        await EnsureLoggedIn(msg, notLoggedInMessage);
                     return false;
                 }
             }
 
-            await SendMessage(msg.Channel, msg.Author.Username + ", I got this message from pr2hub: `" +
-              await generationManager.DeleteLevel(levelID) + "`.");
+            string response = await generationManager.DeleteLevel(levelID);
+            await SendMessage(msg.Channel, msg.Author.Username + ", I got this message from pr2hub: `" + response + "`.");
+            await EnsureLoggedIn(msg, response);
+
             return true;
         }
         #endregion
@@ -896,6 +903,26 @@ namespace LevelGenBot
             return true;
         }
         #endregion
+
+        private const string notLoggedInMessage = "error=You are not logged in.";
+        private async Task EnsureLoggedIn(SocketMessage msg, string pr2hubMessage)
+        {
+            if (pr2hubMessage == notLoggedInMessage)
+            {
+                Task msgTask = SendMessage(msg.Channel, "It seems my PR2 login token has expired. Attempting to get a new one...");
+                await GetNewLoginToken(msg, null);
+                await msgTask;
+            }
+        }
+        private async Task<bool> GetNewLoginToken(SocketMessage msg, params string[] args)
+        {
+            if (await generationManager.GetNewLoginToken())
+                await SendMessage(msg.Channel, "New login token acquired.");
+            else
+                await SendMessage(msg.Channel, "Failed to get a new login token.");
+
+            return true;
+        }
 
         private async Task<bool> SendBannedMessage(SocketMessage msg, params string[] args)
         {
