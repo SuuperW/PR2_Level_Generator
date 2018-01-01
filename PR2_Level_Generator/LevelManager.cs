@@ -20,10 +20,14 @@ namespace PR2_Level_Generator
 
 		public string login_token;
 		public string username;
+        public string password;
 		public string luaPath = "lua";
 
 		public ILevelGenerator generator;
 		private MapLE Map { get => generator.Map; }
+
+        public event Action DetectedInvalidToken;
+        private const string notLoggedInMessage = "error=You are not logged in.";
 
 		public async Task<string> UploadLevel()
 		{
@@ -31,10 +35,15 @@ namespace PR2_Level_Generator
 			string LData = GetLevelData() + "&token=" + login_token;
 			Map.SetSetting("note", oldNote);
 
-			if (LData.Length > 1000000)
-				return "Level data is too large; pr2hub will only accept levels less than ~1MB.";
-			else
-				return await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
+            if (LData.Length > 1000000)
+                return "Level data is too large; pr2hub will only accept levels less than ~1MB.";
+            else
+            {
+                string result = await PostLoadHTTP("http://pr2hub.com/upload_level.php", LData);
+                if (result == notLoggedInMessage)
+                    DetectedInvalidToken?.Invoke();
+                return result;
+            }
 		}
 		public bool SaveLevel(string path)
 		{
@@ -207,6 +216,12 @@ namespace PR2_Level_Generator
 		public async Task<int> GetLevelID(string title)
 		{
 			string result = await HttpGet("https://pr2hub.com/get_levels.php?token=" + login_token);
+            if (result == notLoggedInMessage)
+            {
+                DetectedInvalidToken?.Invoke();
+                return -2;
+            }
+
 			var collection = HttpUtility.ParseQueryString(result);
 
 			string levelID = "";
@@ -236,10 +251,13 @@ namespace PR2_Level_Generator
 		}
 		public async Task<string> DeleteLevel(int id)
 		{
-			return await PostLoadHTTP("https://pr2hub.com/delete_level.php", "level_id=" + id + "&token=" + login_token);
+			string result = await PostLoadHTTP("https://pr2hub.com/delete_level.php", "level_id=" + id + "&token=" + login_token);
+            if (result == notLoggedInMessage)
+                DetectedInvalidToken?.Invoke();
+            return result;
 		}
 
-		private async Task<string> PostLoadHTTP(string url, string postData) // temp public
+        private async Task<string> PostLoadHTTP(string url, string postData)
 		{
 			byte[] byteArray = Encoding.UTF8.GetBytes(postData);
 
