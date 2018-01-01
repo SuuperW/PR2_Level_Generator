@@ -257,6 +257,34 @@ namespace PR2_Level_Generator
             return result;
 		}
 
+        public async Task<bool> GetNewLoginToken()
+        {
+            string version = "24-dec-2013-v1", login_code = "eisjI1dHWG4vVTAtNjB0Xw";
+            JObject loginData = new JObject();
+
+            JObject server = new JObject();
+            server["server_id"] = 1;
+            loginData["user_name"] = username;
+            loginData["user_pass"] = password;
+            loginData["server"] = server;
+            loginData["version"] = version;
+            loginData["remember"] = true;
+            loginData["domain"] = "cdn.jiggmin.com";
+            loginData["login_code"] = login_code;
+
+            string str = loginData.ToString();
+            string loginData_encrypted = PR2_Cryptography.EncryptLoginData(str);
+            loginData_encrypted = Uri.EscapeDataString(loginData_encrypted);
+
+            string responseStr = await PostLoadHTTP("https://pr2hub.com/login.php", "i=" + loginData_encrypted + "&version=" + version + "&token=");
+            JObject response = JObject.Parse(responseStr);
+            if ((string)response["status"] != "success")
+                return false;
+            
+            login_token = (string)response["token"];
+            return true;
+        }
+
         private async Task<string> PostLoadHTTP(string url, string postData)
 		{
 			byte[] byteArray = Encoding.UTF8.GetBytes(postData);
