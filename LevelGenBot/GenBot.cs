@@ -19,14 +19,16 @@ namespace LevelGenBot
 {
     class GenBot
     {
-        string bot_token;
-        string bot_name_discrim;
-        string pr2_username;
-        string pr2_token;
         const string configsPath = "GenConfigs";
         const string luaPath = "lua";
         const string outputPath = "files/output.xml";
         const string errorPath = "files/error.txt";
+
+        JObject secrets;
+        string bot_token;
+        string bot_name_discrim;
+        const string secretsPath = "files/secrets.txt";
+
         int loggingLevel;
 
         int tempFileID = -1;
@@ -49,12 +51,10 @@ namespace LevelGenBot
         {
             this.loggingLevel = loggingLevel;
 
-            if (!File.Exists("files/secrets.txt"))
+            if (!File.Exists(secretsPath))
                 throw new FileNotFoundException("GenBot could not find secrets.txt. Please see README for info on how to set this up.");
-            JObject json = JObject.Parse(File.ReadAllText("files/secrets.txt"));
-            bot_token = json["bot_token"].ToString();
-            pr2_username = json["pr2_username"].ToString();
-            pr2_token = json["pr2_token"].ToString();
+            secrets = JObject.Parse(File.ReadAllText("files/secrets.txt"));
+            bot_token = secrets["bot_token"].ToString();
 
             specialUsers = new SpecialUsersCollection("files/special users.txt");
 
@@ -67,9 +67,9 @@ namespace LevelGenBot
             CreateHelpTopicsList();
 
             generationManager = new GenerationManager(luaPath);
-            generationManager.username = pr2_username;
-            generationManager.login_token = pr2_token;
-            generationManager.password = json["pr2_password"].ToString();
+            generationManager.username = secrets["pr2_username"].ToString();
+            generationManager.login_token = secrets["pr2_token"].ToString();
+            generationManager.password = secrets["pr2_password"].ToString();
 
             // Delete any temp files that still exist from last time the bot was run.
             if (Directory.Exists("temp"))
@@ -192,6 +192,11 @@ namespace LevelGenBot
             File.WriteAllText(errorPath, errorStr.ToString());
             return AppendToLog("<error time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
               "'>\n" + errorStr.ToString() + "\n</receive_command>\n");
+        }
+
+        private void SaveSecrets()
+        {
+            File.WriteAllText(secretsPath, secrets.ToString());
         }
 
         private async Task SocketClient_MessageReceived(SocketMessage msg)
@@ -408,7 +413,7 @@ namespace LevelGenBot
             {
                 await SendMessage(await msg.Author.GetOrCreateDMChannelAsync(), helpStrings[helpTopic]
                   .Replace("@me", "@" + bot_name_discrim)
-                  .Replace("@pr2acc", pr2_username));
+                  .Replace("@pr2acc", generationManager.username));
             }
             else
             {
@@ -925,7 +930,11 @@ namespace LevelGenBot
         private async Task<bool> GetNewLoginToken(SocketMessage msg, params string[] args)
         {
             if (await generationManager.GetNewLoginToken())
+            {
                 await SendMessage(msg.Channel, "New login token acquired.");
+                secrets["pr2_token"] = generationManager.login_token;
+                SaveSecrets();
+            }
             else
                 await SendMessage(msg.Channel, "Failed to get a new login token.");
 
