@@ -349,30 +349,38 @@ namespace LevelGenBot
         private BotCommand bannedCommand;
         private void InitializeBotCommandsList()
         {
-            everybodyBotCommands = new SortedList<string, BotCommand>();
-            everybodyBotCommands.Add("help", new BotCommand(SendHelpMessage));
-            everybodyBotCommands.Add("commands", new BotCommand(SendCommandsList));
-            everybodyBotCommands.Add("config_list", new BotCommand(SendConfigsListMessage));
-            everybodyBotCommands.Add("generate", new BotCommand(GenerateLevel, 30, 5));
-            everybodyBotCommands.Add("get_config", new BotCommand(GetConfigFile, 5));
-            everybodyBotCommands.Add("set_config", new BotCommand(SetConfigFile, 5));
-            everybodyBotCommands.Add("delete_config", new BotCommand(DeleteConfigFile));
-            everybodyBotCommands.Add("set_lua_script", new BotCommand(SetLuaScript, 5));
-            everybodyBotCommands.Add("get_lua_script", new BotCommand(GetLuaScript, 5));
-            everybodyBotCommands.Add("lua_script_list", new BotCommand(GetLuaScriptList));
-            everybodyBotCommands.Add("delete_lua_script", new BotCommand(DeleteLuaScript));
-            everybodyBotCommands.Add("delete_level", new BotCommand(DeleteLevel, 15));
+            everybodyBotCommands = new SortedList<string, BotCommand>
+            {
+                { "help", new BotCommand(SendHelpMessage) },
+                { "commands", new BotCommand(SendCommandsList) },
+                { "config_list", new BotCommand(SendConfigsListMessage) },
+                { "generate", new BotCommand(GenerateLevel, 30, 5) },
+                { "get_config", new BotCommand(GetConfigFile, 5) },
+                { "set_config", new BotCommand(SetConfigFile, 5) },
+                { "delete_config", new BotCommand(DeleteConfigFile) },
+                { "set_lua_script", new BotCommand(SetLuaScript, 5) },
+                { "get_lua_script", new BotCommand(GetLuaScript, 5) },
+                { "lua_script_list", new BotCommand(GetLuaScriptList) },
+                { "delete_lua_script", new BotCommand(DeleteLuaScript) },
+                { "delete_level", new BotCommand(DeleteLevel, 15) }
+            };
 
-            trustedBotCommands = new SortedList<string, BotCommand>();
+            trustedBotCommands = new SortedList<string, BotCommand>
+            {
+                { "refresh_token", new BotCommand(GetNewLoginToken) },
+                { "banned", new BotCommand(SendBannedMessage) }
+            };
 
-            ownerBotCommands = new SortedList<string, BotCommand>();
-            ownerBotCommands.Add("add_trusted_user", new BotCommand(AddTrustedUser));
-            ownerBotCommands.Add("remove_trusted_user", new BotCommand(RemoveTrustedUser));
-            ownerBotCommands.Add("gtfo", new BotCommand(GTFO));
-            ownerBotCommands.Add("ban_user", new BotCommand(BanUser));
-            ownerBotCommands.Add("unban_user", new BotCommand(UnbanUser));
-            ownerBotCommands.Add("get_log", new BotCommand(GetLog));
-            ownerBotCommands.Add("get_error", new BotCommand(GetError));
+            ownerBotCommands = new SortedList<string, BotCommand>
+            {
+                { "add_trusted_user", new BotCommand(AddTrustedUser) },
+                { "remove_trusted_user", new BotCommand(RemoveTrustedUser) },
+                { "gtfo", new BotCommand(GTFO) },
+                { "ban_user", new BotCommand(BanUser) },
+                { "unban_user", new BotCommand(UnbanUser) },
+                { "get_log", new BotCommand(GetLog) },
+                { "get_error", new BotCommand(GetError) }
+            };
 
             bannedCommand = new BotCommand(SendBannedMessage);
         }
