@@ -931,7 +931,7 @@ namespace LevelGenBot
 
         private async Task<bool> LogToChannel(SocketMessage msg, params string[] args)
         {
-            if (loggingChannel == msg.Channel)
+            if (loggingChannel != null && loggingChannel.Id == msg.Channel.Id)
             {
                 loggingChannel = null;
                 await SendMessage(msg.Channel, "Log messages will no longer be sent to this channel.");
