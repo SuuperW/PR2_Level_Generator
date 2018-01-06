@@ -30,6 +30,7 @@ namespace LevelGenBot
         const string secretsPath = "files/secrets.txt";
 
         int loggingLevel;
+        IMessageChannel loggingChannel = null;
 
         int tempFileID = -1;
         private string GetTempFileName()
@@ -96,6 +97,7 @@ namespace LevelGenBot
         public async Task Disconnect()
         {
             AppendToLog("<disconnect time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></disconnect>\n", 2);
+            loggingChannel = null;
 
             await socketClient.GetUser(specialUsers.Owner).SendMessageAsync("I'm diconnecting now.");
 
@@ -170,7 +172,11 @@ namespace LevelGenBot
         Task AppendToLog(string text, int priority = 1)
         {
             if (priority >= loggingLevel)
+            {
+                if (loggingChannel != null)
+                    loggingChannel.SendMessageAsync(text);
                 return File.AppendAllTextAsync(outputPath, text);
+            }
             else
                 return Task.CompletedTask;
         }
@@ -388,7 +394,8 @@ namespace LevelGenBot
                 { "ban_user", new BotCommand(BanUser) },
                 { "unban_user", new BotCommand(UnbanUser) },
                 { "get_log", new BotCommand(GetLog) },
-                { "get_error", new BotCommand(GetError) }
+                { "get_error", new BotCommand(GetError) },
+                { "log_here", new BotCommand(LogToChannel) }
             };
 
             bannedCommand = new BotCommand(SendBannedMessage);
@@ -918,6 +925,21 @@ namespace LevelGenBot
         private async Task<bool> GetError(SocketMessage msg, params string[] args)
         {
             await SendFile(await socketClient.GetUser(specialUsers.Owner).GetOrCreateDMChannelAsync(), errorPath);
+            return true;
+        }
+
+        private async Task<bool> LogToChannel(SocketMessage msg, params string[] args)
+        {
+            if (loggingChannel == msg.Channel)
+            {
+                loggingChannel = null;
+                await SendMessage(msg.Channel, "Log messages will no longer be sent to this channel.");
+            }
+            else
+            {
+                loggingChannel = msg.Channel;
+                await SendMessage(msg.Channel, "Now sending all log messages to this channel.");
+            }
             return true;
         }
         #endregion
