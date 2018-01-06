@@ -599,6 +599,7 @@ namespace LevelGenBot
         private string GetFilePath(ulong userID, string fileName, string basePath)
         {
             fileName = fileName.Replace("../", ""); // Security
+            fileName = fileName.ToLower(); // for case-sensitive file systems
             if (fileName.StartsWith("me/"))
                 fileName = userID + fileName.Substring(2);
 
@@ -969,7 +970,7 @@ namespace LevelGenBot
                 return null;
             }
             else
-                return fileName;
+                return fileName.ToLower();
         }
         private async Task<string> GetAttachmentString(Attachment attachment)
         {
