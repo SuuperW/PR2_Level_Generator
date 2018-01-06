@@ -93,6 +93,7 @@ namespace PR2_Level_Generator
 		{
 			script.Globals["PlaceBlock"] = (Action<int, int, int>)Map.AddBlock;
 			script.Globals["GetBlock"] = (Func<int, int, int>)GetBlock;
+            script.Globals["DeleteBlock"] = (Action<int, int>)Map.DeleteBlock;
 			script.Globals["RemoveAllBlocks"] = (Action<int>)RemoveAllBlocks;
 
 			script.Globals["FillRectangle"] = (Action<int, int, int, int, int[]>)FillRectangle;
