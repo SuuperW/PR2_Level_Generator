@@ -1,7 +1,7 @@
 {
 	"_default": "This bot allows you to create pseudo-random 'procedurally generated' levels on Platform Racing 2. All levels generated with this bot will be uploaded to the account `@pr2acc`. You can search for levels by this user to see examples of the kinds of levels this bot can create. (Most levels will be password-proteced, but with a blank password. To play these levels, press 'Check' without typing in a password.)
 \nWhen sending a command to this bot via DMs, no prefix is required. To use this bot outside of DMs, prefix the command with a mention of this bot, e.g. `@me help`.
-\nSome commands require or allow parameters, in addition to just the command name. These should be separated by spaces. If the parameter itself includes a space, surround the parameter with quotation marks, e.g. `generate \"easy race\"`
+\nSome commands require or allow parameters, in addition to just the command name. These should be separated by spaces. If the parameter itself includes a space, surround the parameter with quotation marks, e.g. `generate \"exampele config that doesn't really exist\"`
 \nFor a list of extra help topics, use the command `help topics`. For a list of available commands, use the command `commands`.",
 
 	"_hello": "For details on how to use this bot, say `help`.",
