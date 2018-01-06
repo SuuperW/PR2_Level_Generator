@@ -56,7 +56,7 @@ namespace LevelGenBot
             secrets = JObject.Parse(File.ReadAllText("files/secrets.txt"));
             bot_token = secrets["bot_token"].ToString();
 
-            specialUsers = new SpecialUsersCollection("files/special users.txt");
+            specialUsers = new SpecialUsersCollection("files/specialUsers.txt");
 
             helpStrings = new SortedDictionary<string, string>();
             JObject helpJson = JObject.Parse(File.ReadAllText("files/helpTopics.txt"));
