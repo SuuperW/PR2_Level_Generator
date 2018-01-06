@@ -43,25 +43,17 @@ namespace LevelGenBot
 		}
 
 		/// <summary>
-		/// Determines if the given command can be executed or not. If it can, it returns the command. If not, it returns a command which tells the user to wait.
+		/// Determines if the given command can be executed at this time by the specified user.
+        /// If not, it returns a message to be sent to the user. If the command is allowed at this time, returns null.
 		/// </summary>
-		public BotCommand CommandOrWait(BotCommand command, ulong userID)
-		{
-			string message = null;
-			if (TimeSinceLastUse(command.Name) < command.MinDelay)
-				message = "I've been getting too many of those commands lately. Please try again later.";
-			else if (TimeSinceLastUse(command.Name, userID) < command.MinDelayPerUser)
-				message = "You may only use that command once every " + command.MinDelayPerUser + " seconds.";
-
-			if (message == null)
-				return command;
-			else
-			{
-				return new BotCommand(async (msg, args) => {
-					await msg.Author.SendMessageAsync(message);
-					return true;
-				});
-			}
-		}
+        public string GetWaitMessage(BotCommand command, ulong userID)
+        {
+            string message = null;
+            if (TimeSinceLastUse(command.Name) < command.MinDelay)
+                message = ", I've been getting too many of those commands lately. Please try again later.";
+            else if (TimeSinceLastUse(command.Name, userID) < command.MinDelayPerUser)
+                message = ", you may only use that command once every " + command.MinDelayPerUser + " seconds.";
+            return message;
+        }
 	}
 }

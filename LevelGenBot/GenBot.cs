@@ -231,7 +231,11 @@ namespace LevelGenBot
                     await AppendToLog("<receive_command time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() +
                       "' channel='" + msg.Channel.Name + "'>\n" + msg.Content + "\n</receive_command>\n");
                     if (msg.Author.Id != specialUsers.Owner)
-                        command = commandHistory.CommandOrWait(command, msg.Author.Id);
+                    {
+                        string waitMessage = commandHistory.GetWaitMessage(command, msg.Author.Id);
+                        if (waitMessage != null)
+                            command = new BotCommand(async (m, a) => { await SendMessage(msg.Channel, msg.Author.Username + waitMessage); return true; });
+                    }
 
                     if (await command.Delegate(msg, args))
                         commandHistory.AddCommand(command.Name, msg.Author.Id);
