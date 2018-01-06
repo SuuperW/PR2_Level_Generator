@@ -395,7 +395,8 @@ namespace LevelGenBot
                 { "unban_user", new BotCommand(UnbanUser) },
                 { "get_log", new BotCommand(GetLog) },
                 { "get_error", new BotCommand(GetError) },
-                { "log_here", new BotCommand(LogToChannel) }
+                { "log_here", new BotCommand(LogToChannel) },
+                { "set_logging_level", new BotCommand(SetLoggingLevel) }
             };
 
             bannedCommand = new BotCommand(SendBannedMessage);
@@ -940,6 +941,14 @@ namespace LevelGenBot
                 loggingChannel = msg.Channel;
                 await SendMessage(msg.Channel, "Now sending all log messages to this channel.");
             }
+            return true;
+        }
+        private async Task<bool> SetLoggingLevel(SocketMessage msg, params string[] args)
+        {
+            if (int.TryParse(args[1], out loggingLevel))
+                await SendMessage(msg.Channel, "Logging level set.");
+            else
+                await SendMessage(msg.Channel, "Could not parse `" + args[1] + "`.");
             return true;
         }
         #endregion
