@@ -396,7 +396,8 @@ namespace LevelGenBot
                 { "get_log", new BotCommand(GetLog) },
                 { "get_error", new BotCommand(GetError) },
                 { "log_here", new BotCommand(LogToChannel) },
-                { "set_logging_level", new BotCommand(SetLoggingLevel) }
+                { "set_logging_level", new BotCommand(SetLoggingLevel) },
+                { "clear_log", new BotCommand(ClearLog) }
             };
 
             bannedCommand = new BotCommand(SendBannedMessage);
@@ -947,6 +948,13 @@ namespace LevelGenBot
                 await SendMessage(msg.Channel, "Logging level set.");
             else
                 await SendMessage(msg.Channel, "Could not parse `" + args[1] + "`.");
+            return true;
+        }
+        private async Task<bool> ClearLog(SocketMessage msg, params string[] args)
+        {
+            File.Delete(outputPath);
+            await AppendToLog("<log_cleared time='" + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToLongTimeString() + "'></log_cleared>\n");
+            await SendMessage(msg.Channel, "Log file cleared.");
             return true;
         }
         #endregion
