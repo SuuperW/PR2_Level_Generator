@@ -523,9 +523,8 @@ namespace LevelGenBot
 
             await EditMessage(sendingGenerateMessage.Result, msg.Author.Username +
               ", I got this message from pr2hub.com:\n`" + response + "`");
-            await EnsureLoggedIn(msg, response);
 
-            return true;
+            return await EnsureLoggedIn(msg, response);
         }
         private async Task<bool> DeleteLevel(SocketMessage msg, params string[] args)
         {
@@ -560,9 +559,8 @@ namespace LevelGenBot
 
             string response = await generationManager.DeleteLevel(levelID);
             await SendMessage(msg.Channel, msg.Author.Username + ", I got this message from pr2hub: `" + response + "`.");
-            await EnsureLoggedIn(msg, response);
 
-            return true;
+            return await EnsureLoggedIn(msg, response);
         }
         #endregion
 
@@ -954,14 +952,16 @@ namespace LevelGenBot
         #endregion
 
         private const string notLoggedInMessage = "error=You are not logged in.";
-        private async Task EnsureLoggedIn(SocketMessage msg, string pr2hubMessage)
+        private async Task<bool> EnsureLoggedIn(SocketMessage msg, string pr2hubMessage)
         {
             if (pr2hubMessage == notLoggedInMessage)
             {
                 Task msgTask = SendMessage(msg.Channel, "It seems my PR2 login token has expired. Attempting to get a new one...");
                 await GetNewLoginToken(msg, null);
                 await msgTask;
+                return false;
             }
+            return true;
         }
         private async Task<bool> GetNewLoginToken(SocketMessage msg, params string[] args)
         {
